@@ -41,6 +41,14 @@ public class Game1 : Microsoft.Xna.Framework.Game
     {
         try
         {
+            // Check if running on Windows (System.Speech requires Windows)
+            if (!OperatingSystem.IsWindows())
+            {
+                _initError = "This game requires Windows to run (System.Speech is Windows-only)";
+                Console.WriteLine(_initError);
+                return;
+            }
+
             // Initialize core systems
             _clock = new SimulationClock();
             _simulation = new GameSimulation();
@@ -75,7 +83,7 @@ public class Game1 : Microsoft.Xna.Framework.Game
         }
         catch (Exception ex)
         {
-            _initError = $"Initialization error: {ex.Message}";
+            _initError = $"Initialization error: {ex.Message}\n\nNote: This game requires Windows and microphone access for voice recognition.";
             Console.WriteLine(_initError);
         }
 
