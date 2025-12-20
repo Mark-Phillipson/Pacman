@@ -10,6 +10,7 @@ namespace PacmanVoice.UI;
 public class HudOverlay
 {
     private SpriteFont? _font;
+    private Texture2D? _pixelTexture;
     private readonly VoiceInputController _voiceController;
     private readonly Game.GameSimulation _simulation;
     private readonly Game.CommandRouter _router;
@@ -26,9 +27,16 @@ public class HudOverlay
         _font = font;
     }
 
+    public void Initialize(GraphicsDevice graphicsDevice)
+    {
+        // Create a 1x1 white pixel texture for drawing rectangles
+        _pixelTexture = new Texture2D(graphicsDevice, 1, 1);
+        _pixelTexture.SetData(new[] { Color.White });
+    }
+
     public void Draw(SpriteBatch spriteBatch, int screenWidth, int screenHeight)
     {
-        if (_font == null) return;
+        if (_font == null || _pixelTexture == null) return;
 
         var state = _simulation.State;
 
@@ -125,10 +133,9 @@ public class HudOverlay
 
     private void DrawRectangle(SpriteBatch spriteBatch, Rectangle rect, Color color)
     {
-        // Create a 1x1 white texture if needed (we'll create this once in the game)
-        var texture = new Texture2D(spriteBatch.GraphicsDevice, 1, 1);
-        texture.SetData(new[] { Color.White });
-        spriteBatch.Draw(texture, rect, color);
-        texture.Dispose();
+        if (_pixelTexture != null)
+        {
+            spriteBatch.Draw(_pixelTexture, rect, color);
+        }
     }
 }

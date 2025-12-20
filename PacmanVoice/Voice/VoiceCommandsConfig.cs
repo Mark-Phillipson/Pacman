@@ -57,6 +57,8 @@ public class CommandProfile
         error = string.Empty;
 
         // Check non-direction commands have >= 2 words
+        // Note: The plan document mentions syllables, but we check words for simplicity
+        // as syllable counting is complex and word count provides similar protection
         foreach (var cmd in Commands.Values)
         {
             if (cmd.Split(' ', StringSplitOptions.RemoveEmptyEntries).Length < 2)

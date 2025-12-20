@@ -104,9 +104,13 @@ public class Game1 : Microsoft.Xna.Framework.Game
                 _gameRenderer.LoadContent(GraphicsDevice);
             }
 
-            if (_hudOverlay != null && _font != null)
+            if (_hudOverlay != null)
             {
-                _hudOverlay.LoadContent(_font);
+                _hudOverlay.Initialize(GraphicsDevice);
+                if (_font != null)
+                {
+                    _hudOverlay.LoadContent(_font);
+                }
             }
         }
         catch (Exception ex)
@@ -114,13 +118,6 @@ public class Game1 : Microsoft.Xna.Framework.Game
             Console.WriteLine($"Content loading error: {ex.Message}");
             _initError = $"Failed to load content: {ex.Message}";
         }
-    }
-
-    private SpriteFont CreateBasicFont()
-    {
-        // This is a placeholder - in a real implementation you would load from Content Pipeline
-        // For now we'll just return null and handle it in the draw
-        return null!;
     }
 
     protected override void Update(GameTime gameTime)
