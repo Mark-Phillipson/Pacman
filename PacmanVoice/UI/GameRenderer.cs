@@ -105,6 +105,7 @@ public class GameRenderer
         var walls = _simulation.GetWalls();
         var pellets = _simulation.GetPellets();
         var ghosts = _simulation.GetGhosts();
+        var fruitPos = _simulation.GetFruitPosition();
 
         // Center the grid inside the playfield (keeps HUD separate)
         var offsetX = playfieldArea.X + (playfieldArea.Width - gridWidth * CellSize) / 2;
@@ -130,6 +131,12 @@ public class GameRenderer
             {
                 if (pellets[x, y])
                 {
+                    // Skip drawing the pellet if a fruit is occupying this tile so the fruit stays visually on top
+                    if (fruitPos.HasValue && fruitPos.Value.X == x && fruitPos.Value.Y == y)
+                    {
+                        continue;
+                    }
+
                     var pelletSize = 4;
                     var rect = new Rectangle(
                         offsetX + x * CellSize + (CellSize - pelletSize) / 2,
@@ -143,7 +150,6 @@ public class GameRenderer
         }
         
         // Draw fruit if present
-        var fruitPos = _simulation.GetFruitPosition();
         if (fruitPos.HasValue)
         {
             var fruitRect = new Rectangle(
