@@ -92,42 +92,35 @@ public class GameSimulation
             }
         }
 
-        // 2) Carve the outer ring corridor (inside the border).
+        // 2) Carve the outer ring corridor (inside the border) - single tile wide
         CarveH(_walls, 1, GridWidth - 2, 1);
         CarveH(_walls, 1, GridWidth - 2, GridHeight - 2);
         CarveV(_walls, 1, 1, GridHeight - 2);
         CarveV(_walls, GridWidth - 2, 1, GridHeight - 2);
 
-        // 3) Carve a central spine and several horizontal lanes.
+        // 3) Carve a central spine and several horizontal lanes - all single tile paths.
         var cx = GridWidth / 2 - 1; // 13 on 28-wide grid
         CarveV(_walls, cx, 1, GridHeight - 2);
 
-        // Horizontal lanes (some bridge the center, some leave a central block)
-        int[] bridgeRows = [8, 22];
-        int[] gapRows = [4, 12, 18, 26];
+        // Horizontal lanes crossing the center - single tile corridors
+        int[] horizontalPaths = [4, 8, 12, 18, 22, 26];
 
-        foreach (var y in bridgeRows)
+        foreach (var y in horizontalPaths)
         {
             CarveH(_walls, 1, GridWidth - 2, y);
         }
 
-        foreach (var y in gapRows)
-        {
-            CarveH(_walls, 1, cx - 2, y);
-            CarveH(_walls, cx + 2, GridWidth - 2, y);
-        }
-
-        // 4) Side vertical lanes to create the classic "grid" feel.
+        // 4) Side vertical lanes - single tile wide only
         CarveV(_walls, 4, 1, GridHeight - 2);
         CarveV(_walls, GridWidth - 5, 1, GridHeight - 2);
-        CarveV(_walls, 7, 2, GridHeight - 3);
-        CarveV(_walls, GridWidth - 8, 2, GridHeight - 3);
 
-        // 5) Corner rooms / pockets.
-        CarveRect(_walls, 2, 2, 6, 6);
-        CarveRect(_walls, GridWidth - 7, 2, GridWidth - 3, 6);
-        CarveRect(_walls, 2, GridHeight - 7, 6, GridHeight - 3);
-        CarveRect(_walls, GridWidth - 7, GridHeight - 7, GridWidth - 3, GridHeight - 3);
+        // 5) Additional connecting paths - all single tile wide
+        CarveV(_walls, 7, 4, 8);
+        CarveV(_walls, 7, 12, 18);
+        CarveV(_walls, 7, 22, 26);
+        CarveV(_walls, GridWidth - 8, 4, 8);
+        CarveV(_walls, GridWidth - 8, 12, 18);
+        CarveV(_walls, GridWidth - 8, 22, 26);
 
         // 6) Central ghost pen (open interior), connected to the spine via two doors.
         // Pen interior
