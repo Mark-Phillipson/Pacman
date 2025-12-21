@@ -357,6 +357,12 @@ public class GameSimulation
             {
                 _isRespawning = false;
                 _respawnTimer = 0;
+                
+                // Apply any queued direction that came in during respawn
+                if (_directionQueue.Count > 0)
+                {
+                    _nextDirection = _directionQueue.Dequeue();
+                }
             }
             return; // Don't process game logic during respawn
         }
