@@ -632,7 +632,13 @@ public class GameSimulation
         _respawnTimer = 0;
         InitializeLevel();
         _state = GameState.Playing;
+        
+        // Ensure voice recognizer is also reset on restart
+        // This will trigger a reset via the game's update loop
+        OnRestartTriggered?.Invoke();
     }
+    
+    public event Action? OnRestartTriggered;
 
     public void EnterQuitConfirmation()
     {

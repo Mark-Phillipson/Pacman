@@ -44,6 +44,12 @@ public class VoiceInputController : IDisposable
         IsListening = false;
     }
 
+    public void ForceResetListeningState()
+    {
+        _clock.SetListeningFrozen(false);
+        IsListening = false;
+    }
+
     public void UpdateGrammar(IEnumerable<string> phrases, Dictionary<string, CommandType> commandMap)
     {
         _recognizer.UpdateGrammar(phrases, commandMap);

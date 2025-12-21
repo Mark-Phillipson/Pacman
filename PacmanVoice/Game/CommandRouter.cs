@@ -22,6 +22,11 @@ public class CommandRouter
         _game = game;
     }
 
+    public void ClearQueuedCommands()
+    {
+        _queuedCommands.Clear();
+    }
+
     /// <summary>
     /// Runs at most one queued command. Call once per frame/tick.
     /// </summary>
