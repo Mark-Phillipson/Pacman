@@ -154,6 +154,9 @@ public class PacmanGame : Microsoft.Xna.Framework.Game
         var deltaSeconds = gameTime.ElapsedGameTime.TotalSeconds;
         _clock.Update(deltaSeconds);
 
+        // Update animation
+        _gameRenderer?.Update(deltaSeconds);
+
         // Update simulation (only if clock is running)
         if (_clock.IsRunning)
         {

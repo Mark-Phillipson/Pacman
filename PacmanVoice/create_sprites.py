@@ -8,41 +8,56 @@ from PIL import Image, ImageDraw
 import os
 
 def create_pacman_sprites():
-    """Create Pacman sprites facing different directions"""
+    """Create Pacman sprites facing different directions with eating animation frames"""
     sprites_dir = "Content/Sprites/Pacman"
     os.makedirs(sprites_dir, exist_ok=True)
     
     size = 32
     
-    # Pacman facing right
-    img = Image.new('RGBA', (size, size), (0, 0, 0, 0))
-    draw = ImageDraw.Draw(img)
-    draw.ellipse([2, 2, size-2, size-2], fill=(255, 255, 0))  # Yellow circle
-    draw.ellipse([8, 8, 12, 12], fill=(0, 0, 0))  # Eye
-    img.save(f"{sprites_dir}/pacman_right.png")
+    # Create animation frames for each direction
+    # Frame 0: mouth closed (full circle)
+    # Frame 1: mouth slightly open
+    # Frame 2: mouth wide open
     
-    # Pacman facing left
-    img = Image.new('RGBA', (size, size), (0, 0, 0, 0))
-    draw = ImageDraw.Draw(img)
-    draw.ellipse([2, 2, size-2, size-2], fill=(255, 255, 0))
-    draw.ellipse([size-12, 8, size-8, 12], fill=(0, 0, 0))
-    img.save(f"{sprites_dir}/pacman_left.png")
+    directions = {
+        "right": (0, (8, 8, 12, 12)),      # mouth_angle_start, eye_pos
+        "left": (180, (size-12, 8, size-8, 12)),
+        "up": (270, (8, 18, 12, 22)),      # mouth opens upward (toward top of screen)
+        "down": (90, (8, 8, 12, 12))       # mouth opens downward (toward bottom of screen)
+    }
     
-    # Pacman facing up
-    img = Image.new('RGBA', (size, size), (0, 0, 0, 0))
-    draw = ImageDraw.Draw(img)
-    draw.ellipse([2, 2, size-2, size-2], fill=(255, 255, 0))
-    draw.ellipse([8, 6, 12, 10], fill=(0, 0, 0))
-    img.save(f"{sprites_dir}/pacman_up.png")
+    for direction_name, (mouth_angle, eye_pos) in directions.items():
+        # Frame 0: closed (full circle)
+        img = Image.new('RGBA', (size, size), (0, 0, 0, 0))
+        draw = ImageDraw.Draw(img)
+        draw.ellipse([2, 2, size-2, size-2], fill=(255, 255, 0))
+        draw.ellipse(eye_pos, fill=(0, 0, 0))
+        img.save(f"{sprites_dir}/pacman_{direction_name}_0.png")
+        
+        # Frame 1: slightly open (15 degrees)
+        img = Image.new('RGBA', (size, size), (0, 0, 0, 0))
+        draw = ImageDraw.Draw(img)
+        # Draw Pacman with mouth open 15 degrees
+        draw.pieslice([2, 2, size-2, size-2], mouth_angle + 7, mouth_angle + 360 - 7, fill=(255, 255, 0))
+        draw.ellipse(eye_pos, fill=(0, 0, 0))
+        img.save(f"{sprites_dir}/pacman_{direction_name}_1.png")
+        
+        # Frame 2: wide open (45 degrees)
+        img = Image.new('RGBA', (size, size), (0, 0, 0, 0))
+        draw = ImageDraw.Draw(img)
+        # Draw Pacman with mouth open 45 degrees
+        draw.pieslice([2, 2, size-2, size-2], mouth_angle + 22, mouth_angle + 360 - 22, fill=(255, 255, 0))
+        draw.ellipse(eye_pos, fill=(0, 0, 0))
+        img.save(f"{sprites_dir}/pacman_{direction_name}_2.png")
+        
+        # Also keep the original format for backward compatibility
+        img = Image.new('RGBA', (size, size), (0, 0, 0, 0))
+        draw = ImageDraw.Draw(img)
+        draw.ellipse([2, 2, size-2, size-2], fill=(255, 255, 0))
+        draw.ellipse(eye_pos, fill=(0, 0, 0))
+        img.save(f"{sprites_dir}/pacman_{direction_name}.png")
     
-    # Pacman facing down
-    img = Image.new('RGBA', (size, size), (0, 0, 0, 0))
-    draw = ImageDraw.Draw(img)
-    draw.ellipse([2, 2, size-2, size-2], fill=(255, 255, 0))
-    draw.ellipse([8, size-10, 12, size-6], fill=(0, 0, 0))
-    img.save(f"{sprites_dir}/pacman_down.png")
-    
-    print("✓ Pacman sprites created")
+    print("✓ Pacman sprites created with animation frames")
 
 def create_ghost_sprites():
     """Create ghost sprites in different colors"""

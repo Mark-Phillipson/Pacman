@@ -15,12 +15,17 @@ public class GameRenderer
     private readonly Game.GameSimulation _simulation;
     
     // Sprite textures
-    private Texture2D? _pacmanTexture;
+    private Dictionary<string, Texture2D?> _pacmanTextures = new();
     private Texture2D? _ghostRedTexture;
     private Texture2D? _ghostPinkTexture;
     private Texture2D? _ghostCyanTexture;
     private Texture2D? _ghostOrangeTexture;
     private Dictionary<string, Texture2D?> _fruitTextures = new();
+    
+    // Animation tracking
+    private double _animationTimer = 0.0;
+    private const double AnimationFrameDuration = 0.1; // 100ms per frame
+    private const int AnimationFrameCount = 3; // 0: closed, 1: slightly open, 2: wide open
 
     public GameRenderer(Game.GameSimulation simulation)
     {
@@ -36,7 +41,25 @@ public class GameRenderer
         // Load sprite textures
         try
         {
-            _pacmanTexture = content.Load<Texture2D>("Sprites/Pacman/pacman_right");
+            // Load Pacman animation frames for all directions
+            string[] directions = { "right", "left", "up", "down" };
+            foreach (var direction in directions)
+            {
+                for (int frame = 0; frame < AnimationFrameCount; frame++)
+                {
+                    string key = $"{direction}_{frame}";
+                    try
+                    {
+                        _pacmanTextures[key] = content.Load<Texture2D>($"Sprites/Pacman/pacman_{direction}_{frame}");
+                    }
+                    catch
+                    {
+                        // Fallback to static sprite if animation frames not available
+                        _pacmanTextures[key] = null;
+                    }
+                }
+            }
+            
             _ghostRedTexture = content.Load<Texture2D>("Sprites/Ghosts/ghost_red");
             _ghostPinkTexture = content.Load<Texture2D>("Sprites/Ghosts/ghost_pink");
             _ghostCyanTexture = content.Load<Texture2D>("Sprites/Ghosts/ghost_cyan");
@@ -56,6 +79,16 @@ public class GameRenderer
         catch
         {
             // If sprites aren't available, we'll fall back to colored rectangles
+        }
+    }
+    
+    public void Update(double deltaSeconds)
+    {
+        // Update animation timer
+        _animationTimer += deltaSeconds;
+        if (_animationTimer >= AnimationFrameDuration * AnimationFrameCount)
+        {
+            _animationTimer -= AnimationFrameDuration * AnimationFrameCount;
         }
     }
 
@@ -136,7 +169,7 @@ public class GameRenderer
             ghostIndex++;
         }
 
-        // Draw Pacman with sprite or fallback to colored rectangle
+        // Draw Pacman with animated sprite or fallback to colored rectangle
         var pacmanPos = _simulation.PacmanPosition;
         var pacmanRect = new Rectangle(
             offsetX + pacmanPos.X * CellSize,
@@ -145,14 +178,41 @@ public class GameRenderer
             CellSize
         );
         
-        if (_pacmanTexture != null)
+        // Get current animation frame and direction
+        var currentFrame = (int)(_animationTimer / AnimationFrameDuration) % AnimationFrameCount;
+        var direction = GetDirectionString(_simulation.CurrentDirection);
+        var pacmanTexture = GetPacmanTexture(direction, currentFrame);
+        
+        if (pacmanTexture != null)
         {
-            spriteBatch.Draw(_pacmanTexture, pacmanRect, Color.White);
+            spriteBatch.Draw(pacmanTexture, pacmanRect, Color.White);
         }
         else
         {
             spriteBatch.Draw(_pixelTexture, pacmanRect, Color.Yellow);
         }
+    }
+    
+    private string GetDirectionString(Game.Direction direction)
+    {
+        return direction switch
+        {
+            Game.Direction.Up => "up",
+            Game.Direction.Down => "down",
+            Game.Direction.Left => "left",
+            Game.Direction.Right => "right",
+            _ => "right" // Default to right if no direction
+        };
+    }
+    
+    private Texture2D? GetPacmanTexture(string direction, int frame)
+    {
+        string key = $"{direction}_{frame}";
+        if (_pacmanTextures.TryGetValue(key, out var texture))
+        {
+            return texture;
+        }
+        return null;
     }
     
     private Texture2D? GetGhostTexture(int ghostIndex)
