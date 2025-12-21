@@ -54,6 +54,19 @@ public class Game1 : Microsoft.Xna.Framework.Game
             _simulation = new GameSimulation();
             _commandRouter = new CommandRouter(_simulation, this);
 
+            // Play a simple "death" sound on collision (no content assets required)
+            _simulation.PlayerDied += () =>
+            {
+                try
+                {
+                    Console.Beep(440, 150);
+                }
+                catch
+                {
+                    // Ignore if beep isn't supported in the current host.
+                }
+            };
+
             // Load voice commands configuration
             var configPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "voice-commands.json");
             var config = VoiceConfigLoader.LoadConfig(configPath);

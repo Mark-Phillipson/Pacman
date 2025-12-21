@@ -12,6 +12,16 @@ public class GameSimulation
     private const int GridHeight = 31;
     private const double MoveInterval = 0.15; // seconds per grid cell
 
+    private static readonly GridPosition PacmanStart = new(GridWidth / 2, GridHeight / 2);
+    private static readonly (GridPosition Position, Direction Direction)[] GhostStartStates =
+    [
+        // Simple "pen" near the center (2x2 block above Pac-Man's start)
+        (new GridPosition(GridWidth / 2 - 1, GridHeight / 2 - 2), Direction.Right),
+        (new GridPosition(GridWidth / 2, GridHeight / 2 - 2), Direction.Left),
+        (new GridPosition(GridWidth / 2 - 1, GridHeight / 2 - 1), Direction.Right),
+        (new GridPosition(GridWidth / 2, GridHeight / 2 - 1), Direction.Left),
+    ];
+
     private GameState _state = GameState.NotStarted;
     private GridPosition _pacmanPos;
     private Direction _currentDirection = Direction.None;
@@ -22,6 +32,8 @@ public class GameSimulation
     private bool[,] _pellets = new bool[GridWidth, GridHeight];
     private bool[,] _walls = new bool[GridWidth, GridHeight];
     private List<Ghost> _ghosts = new();
+
+    public event Action? PlayerDied;
 
     public GameState State => _state;
     public GridPosition PacmanPosition => _pacmanPos;
@@ -73,15 +85,15 @@ public class GameSimulation
         }
 
         // Starting position
-        _pacmanPos = new GridPosition(GridWidth / 2, GridHeight / 2);
+        _pacmanPos = PacmanStart;
         _pellets[_pacmanPos.X, _pacmanPos.Y] = false;
 
         // Initialize ghosts
         _ghosts.Clear();
-        _ghosts.Add(new Ghost(new GridPosition(5, 5), Direction.Right));
-        _ghosts.Add(new Ghost(new GridPosition(GridWidth - 6, 5), Direction.Left));
-        _ghosts.Add(new Ghost(new GridPosition(5, GridHeight - 6), Direction.Right));
-        _ghosts.Add(new Ghost(new GridPosition(GridWidth - 6, GridHeight - 6), Direction.Left));
+        foreach (var (pos, dir) in GhostStartStates)
+        {
+            _ghosts.Add(new Ghost(pos, dir));
+        }
     }
 
     public void Update(double deltaSeconds)
@@ -113,24 +125,9 @@ public class GameSimulation
                     _score += 10;
                 }
 
-                // Check ghost collision
-                foreach (var ghost in _ghosts)
+                if (TryHandlePacmanGhostCollision())
                 {
-                    if (ghost.Position == _pacmanPos)
-                    {
-                        _lives--;
-                        if (_lives <= 0)
-                        {
-                            _state = GameState.GameOver;
-                        }
-                        else
-                        {
-                            // Reset position
-                            _pacmanPos = new GridPosition(GridWidth / 2, GridHeight / 2);
-                            _currentDirection = Direction.None;
-                        }
-                        break;
-                    }
+                    return;
                 }
             }
 
@@ -139,6 +136,55 @@ public class GameSimulation
             {
                 ghost.Update(_walls, GridWidth, GridHeight);
             }
+
+            // Also check collision after ghosts move (otherwise a ghost moving onto Pac-Man is ignored)
+            if (TryHandlePacmanGhostCollision())
+            {
+                return;
+            }
+        }
+    }
+
+    private bool TryHandlePacmanGhostCollision()
+    {
+        foreach (var ghost in _ghosts)
+        {
+            if (ghost.Position != _pacmanPos)
+            {
+                continue;
+            }
+
+            LoseLife();
+            return true;
+        }
+
+        return false;
+    }
+
+    private void LoseLife()
+    {
+        _lives--;
+        PlayerDied?.Invoke();
+
+        if (_lives <= 0)
+        {
+            _state = GameState.GameOver;
+            return;
+        }
+
+        ResetActorsAfterDeath();
+    }
+
+    private void ResetActorsAfterDeath()
+    {
+        _pacmanPos = PacmanStart;
+        _currentDirection = Direction.None;
+        _nextDirection = Direction.None;
+        _moveTimer = 0;
+
+        foreach (var ghost in _ghosts)
+        {
+            ghost.ResetToStart();
         }
     }
 
@@ -229,6 +275,8 @@ public class Ghost
 {
     private GridPosition _position;
     private Direction _direction;
+    private readonly GridPosition _startPosition;
+    private readonly Direction _startDirection;
     private Random _random = new();
 
     public GridPosition Position => _position;
@@ -237,6 +285,15 @@ public class Ghost
     {
         _position = startPos;
         _direction = startDir;
+
+        _startPosition = startPos;
+        _startDirection = startDir;
+    }
+
+    public void ResetToStart()
+    {
+        _position = _startPosition;
+        _direction = _startDirection;
     }
 
     public void Update(bool[,] walls, int gridWidth, int gridHeight)
