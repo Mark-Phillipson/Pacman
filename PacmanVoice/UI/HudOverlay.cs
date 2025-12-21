@@ -49,7 +49,7 @@ public class HudOverlay
         DrawRectangle(spriteBatch, hudArea, new Color(0, 0, 0, 160));
 
         // Draw game status in the HUD panel
-        var statusText = $"Score: {_simulation.Score}  Lives: {_simulation.Lives}  State: {state}";
+        var statusText = $"Level: {_simulation.CurrentLevel}  Score: {_simulation.Score}  Lives: {_simulation.Lives}  State: {state}";
         spriteBatch.DrawString(_font, statusText, new Vector2(hudArea.X + 10, hudArea.Y + 10), Color.White);
 
         // Draw last recognized command

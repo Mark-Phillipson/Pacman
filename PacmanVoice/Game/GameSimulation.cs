@@ -11,6 +11,7 @@ public class GameSimulation
     private const int GridWidth = 28;
     private const int GridHeight = 31;
     private const double MoveInterval = 0.15; // seconds per grid cell
+    private const double GhostSpeedMultiplierLevel2 = 0.85; // Ghosts move 15% faster on level 2
 
     // Classic-inspired: start on a safe corridor near the lower middle.
     private static readonly GridPosition PacmanStart = new(13, 23);
@@ -31,6 +32,9 @@ public class GameSimulation
     private double _moveTimer;
     private int _score;
     private int _lives = 3;
+    private int _currentLevel = 1;
+    private int _totalPellets = 0;
+    private int _pelletsEaten = 0;
     private bool[,] _pellets = new bool[GridWidth, GridHeight];
     private bool[,] _walls = new bool[GridWidth, GridHeight];
     private List<Ghost> _ghosts = new();
@@ -39,12 +43,14 @@ public class GameSimulation
     public event Action? PelletEaten;
     public event Action? GhostEaten;
     public event Action? LevelStart;
+    public event Action? LevelCompleted;
 
     public GameState State => _state;
     public GridPosition PacmanPosition => _pacmanPos;
     public Direction CurrentDirection => _currentDirection;
     public int Score => _score;
     public int Lives => _lives;
+    public int CurrentLevel => _currentLevel;
 
     public GameSimulation()
     {
@@ -52,6 +58,23 @@ public class GameSimulation
     }
 
     private void InitializeLevel()
+    {
+        if (_currentLevel == 1)
+        {
+            InitializeLevel1();
+        }
+        else if (_currentLevel == 2)
+        {
+            InitializeLevel2();
+        }
+        else
+        {
+            // Default to level 1 for any level > 2
+            InitializeLevel1();
+        }
+    }
+
+    private void InitializeLevel1()
     {
         // Classic-inspired maze: single-tile corridors surrounded by walls.
         // Note: this is intentionally *inspired by* the arcade feel, not a 1:1 copy.
@@ -157,11 +180,144 @@ public class GameSimulation
         _pacmanPos = PacmanStart;
         _pellets[_pacmanPos.X, _pacmanPos.Y] = false;
 
+        // Count total pellets
+        _totalPellets = 0;
+        _pelletsEaten = 0;
+        for (int x = 0; x < GridWidth; x++)
+        {
+            for (int y = 0; y < GridHeight; y++)
+            {
+                if (_pellets[x, y]) _totalPellets++;
+            }
+        }
+
         // Initialize ghosts
         _ghosts.Clear();
         foreach (var (pos, dir) in GhostStartStates)
         {
             _ghosts.Add(new Ghost(pos, dir));
+        }
+    }
+
+    private void InitializeLevel2()
+    {
+        // Level 2 has a different maze layout - more complex with additional paths
+        static void Carve(bool[,] walls, int x, int y)
+        {
+            walls[x, y] = false;
+        }
+
+        static void CarveH(bool[,] walls, int x1, int x2, int y)
+        {
+            if (x2 < x1) (x1, x2) = (x2, x1);
+            for (int x = x1; x <= x2; x++) walls[x, y] = false;
+        }
+
+        static void CarveV(bool[,] walls, int x, int y1, int y2)
+        {
+            if (y2 < y1) (y1, y2) = (y2, y1);
+            for (int y = y1; y <= y2; y++) walls[x, y] = false;
+        }
+
+        static void CarveRect(bool[,] walls, int x1, int y1, int x2, int y2)
+        {
+            if (x2 < x1) (x1, x2) = (x2, x1);
+            if (y2 < y1) (y1, y2) = (y2, y1);
+            for (int x = x1; x <= x2; x++)
+                for (int y = y1; y <= y2; y++)
+                    walls[x, y] = false;
+        }
+
+        // 1) Start with everything as a wall.
+        for (int x = 0; x < GridWidth; x++)
+        {
+            for (int y = 0; y < GridHeight; y++)
+            {
+                _walls[x, y] = true;
+                _pellets[x, y] = false;
+            }
+        }
+
+        // 2) Carve the outer ring corridor
+        CarveH(_walls, 1, GridWidth - 2, 1);
+        CarveH(_walls, 1, GridWidth - 2, GridHeight - 2);
+        CarveV(_walls, 1, 1, GridHeight - 2);
+        CarveV(_walls, GridWidth - 2, 1, GridHeight - 2);
+
+        // 3) Different pattern - create a more maze-like structure
+        var cx = GridWidth / 2 - 1; // 13 on 28-wide grid
+        
+        // Vertical lanes at different positions
+        CarveV(_walls, 3, 1, GridHeight - 2);
+        CarveV(_walls, 6, 1, GridHeight - 2);
+        CarveV(_walls, 9, 1, GridHeight - 2);
+        CarveV(_walls, GridWidth - 4, 1, GridHeight - 2);
+        CarveV(_walls, GridWidth - 7, 1, GridHeight - 2);
+        CarveV(_walls, GridWidth - 10, 1, GridHeight - 2);
+
+        // Horizontal lanes at different positions
+        int[] horizontalPaths = [3, 6, 10, 14, 19, 23, 27];
+        foreach (var y in horizontalPaths)
+        {
+            CarveH(_walls, 1, GridWidth - 2, y);
+        }
+
+        // Create some additional zigzag patterns
+        CarveV(_walls, 12, 3, 10);
+        CarveV(_walls, 15, 3, 10);
+        CarveV(_walls, 12, 14, 19);
+        CarveV(_walls, 15, 14, 19);
+        CarveV(_walls, 12, 23, 27);
+        CarveV(_walls, 15, 23, 27);
+
+        // Central ghost pen (same position as level 1)
+        CarveRect(_walls, cx - 2, 14, cx + 2, 16);
+        Carve(_walls, cx, 13);
+        Carve(_walls, cx, 17);
+        CarveH(_walls, cx - 4, cx + 4, 13);
+        CarveH(_walls, cx - 4, cx + 4, 17);
+
+        // 4) Populate pellets on walkable tiles.
+        for (int x = 1; x <= GridWidth - 2; x++)
+        {
+            for (int y = 1; y <= GridHeight - 2; y++)
+            {
+                if (!_walls[x, y])
+                {
+                    _pellets[x, y] = true;
+                }
+            }
+        }
+
+        // No pellets inside the ghost pen.
+        for (int x = cx - 2; x <= cx + 2; x++)
+        {
+            for (int y = 14; y <= 16; y++)
+            {
+                _pellets[x, y] = false;
+            }
+        }
+
+        // Starting position
+        _pacmanPos = PacmanStart;
+        _pellets[_pacmanPos.X, _pacmanPos.Y] = false;
+
+        // Count total pellets
+        _totalPellets = 0;
+        _pelletsEaten = 0;
+        for (int x = 0; x < GridWidth; x++)
+        {
+            for (int y = 0; y < GridHeight; y++)
+            {
+                if (_pellets[x, y]) _totalPellets++;
+            }
+        }
+
+        // Initialize ghosts with faster speed on level 2
+        _ghosts.Clear();
+        foreach (var (pos, dir) in GhostStartStates)
+        {
+            _ghosts.Add(new Ghost(pos, dir, _currentLevel));
         }
     }
 
@@ -192,7 +348,14 @@ public class GameSimulation
                 {
                     _pellets[_pacmanPos.X, _pacmanPos.Y] = false;
                     _score += 10;
+                    _pelletsEaten++;
                     PelletEaten?.Invoke();
+
+                    // Check if level is complete
+                    if (_pelletsEaten >= _totalPellets)
+                    {
+                        AdvanceLevel();
+                    }
                 }
 
                 if (TryHandlePacmanGhostCollision())
@@ -258,6 +421,26 @@ public class GameSimulation
         }
     }
 
+    private void AdvanceLevel()
+    {
+        _currentLevel++;
+        LevelCompleted?.Invoke();
+        _currentDirection = Direction.None;
+        _nextDirection = Direction.None;
+        _moveTimer = 0;
+        InitializeLevel();
+        LevelStart?.Invoke();
+    }
+
+    public double GetGhostMoveInterval()
+    {
+        if (_currentLevel == 2)
+        {
+            return MoveInterval * GhostSpeedMultiplierLevel2;
+        }
+        return MoveInterval;
+    }
+
     public void SetDirection(Direction direction)
     {
         _nextDirection = direction;
@@ -288,6 +471,7 @@ public class GameSimulation
     {
         _score = 0;
         _lives = 3;
+        _currentLevel = 1;
         _moveTimer = 0;
         _currentDirection = Direction.None;
         _nextDirection = Direction.None;
@@ -348,14 +532,17 @@ public class Ghost
     private Direction _direction;
     private readonly GridPosition _startPosition;
     private readonly Direction _startDirection;
+    private readonly int _level;
     private Random _random = new();
 
     public GridPosition Position => _position;
+    public int Level => _level;
 
-    public Ghost(GridPosition startPos, Direction startDir)
+    public Ghost(GridPosition startPos, Direction startDir, int level = 1)
     {
         _position = startPos;
         _direction = startDir;
+        _level = level;
 
         _startPosition = startPos;
         _startDirection = startDir;
