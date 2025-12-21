@@ -36,31 +36,40 @@ public class HudOverlay
 
     public void Draw(SpriteBatch spriteBatch, int screenWidth, int screenHeight)
     {
+        Draw(spriteBatch, screenWidth, screenHeight, new Rectangle(0, 0, screenWidth, screenHeight));
+    }
+
+    public void Draw(SpriteBatch spriteBatch, int screenWidth, int screenHeight, Rectangle hudArea)
+    {
         if (_font == null || _pixelTexture == null) return;
 
         var state = _simulation.State;
 
-        // Draw game status at top
-        var statusText = $"Score: {_simulation.Score}  Lives: {_simulation.Lives}  State: {state}";
-        spriteBatch.DrawString(_font, statusText, new Vector2(10, 10), Color.White);
+        // Draw HUD background (so text never sits on top of the playfield)
+        DrawRectangle(spriteBatch, hudArea, new Color(0, 0, 0, 160));
 
-        // Draw listening indicator
+        // Draw game status in the HUD panel
+        var statusText = $"Score: {_simulation.Score}  Lives: {_simulation.Lives}  State: {state}";
+        spriteBatch.DrawString(_font, statusText, new Vector2(hudArea.X + 10, hudArea.Y + 10), Color.White);
+
+        // Draw last recognized command
+        if (!string.IsNullOrEmpty(_voiceController.LastRecognizedText))
+        {
+            var lastCmdText = $"Last: {_voiceController.LastRecognizedText}";
+            spriteBatch.DrawString(_font, lastCmdText, new Vector2(hudArea.X + 10, hudArea.Y + 40), Color.LightGreen);
+        }
+
+        // Draw listening indicator (in HUD panel)
         if (_voiceController.IsListening)
         {
             var listeningText = "LISTENING...";
             var size = _font.MeasureString(listeningText);
-            var pos = new Vector2((screenWidth - size.X) / 2, 60);
-            
-            // Draw background
-            var backgroundRect = new Rectangle((int)pos.X - 10, (int)pos.Y - 5, (int)size.X + 20, (int)size.Y + 10);
-            DrawRectangle(spriteBatch, backgroundRect, new Color(0, 0, 0, 180));
-            
+            var pos = new Vector2(hudArea.X + (hudArea.Width - size.X) / 2, hudArea.Y + 10);
             spriteBatch.DrawString(_font, listeningText, pos, Color.Yellow);
 
-            // Show abort hint
             var hintText = "Say 'never mind' to abort";
             var hintSize = _font.MeasureString(hintText);
-            var hintPos = new Vector2((screenWidth - hintSize.X) / 2, pos.Y + size.Y + 5);
+            var hintPos = new Vector2(hudArea.X + (hudArea.Width - hintSize.X) / 2, hudArea.Y + 40);
             spriteBatch.DrawString(_font, hintText, hintPos, Color.LightGray);
         }
 
@@ -91,20 +100,12 @@ public class HudOverlay
         {
             var statusMsgText = _router.LastStatus;
             var msgSize = _font.MeasureString(statusMsgText);
-            var msgPos = new Vector2((screenWidth - msgSize.X) / 2, screenHeight - 60);
-            
-            // Draw background
+            var msgPos = new Vector2(hudArea.X + (hudArea.Width - msgSize.X) / 2, hudArea.Bottom - 60);
+
             var msgBackgroundRect = new Rectangle((int)msgPos.X - 10, (int)msgPos.Y - 5, (int)msgSize.X + 20, (int)msgSize.Y + 10);
             DrawRectangle(spriteBatch, msgBackgroundRect, new Color(0, 0, 100, 180));
-            
-            spriteBatch.DrawString(_font, statusMsgText, msgPos, Color.White);
-        }
 
-        // Draw last recognized command
-        if (!string.IsNullOrEmpty(_voiceController.LastRecognizedText))
-        {
-            var lastCmdText = $"Last: {_voiceController.LastRecognizedText}";
-            spriteBatch.DrawString(_font, lastCmdText, new Vector2(10, 40), Color.LightGreen);
+            spriteBatch.DrawString(_font, statusMsgText, msgPos, Color.White);
         }
 
         // Draw command hints at bottom
@@ -112,21 +113,21 @@ public class HudOverlay
         {
             var hintText = "Say 'begin game' to start";
             var hintSize = _font.MeasureString(hintText);
-            var hintPos = new Vector2((screenWidth - hintSize.X) / 2, screenHeight - 30);
+            var hintPos = new Vector2(hudArea.X + (hudArea.Width - hintSize.X) / 2, hudArea.Bottom - 30);
             spriteBatch.DrawString(_font, hintText, hintPos, Color.Cyan);
         }
         else if (state == Game.GameState.Playing)
         {
             var hintText = "Directions: up, down, left, right | pause game | game status | quit game";
             var hintSize = _font.MeasureString(hintText);
-            var hintPos = new Vector2((screenWidth - hintSize.X) / 2, screenHeight - 30);
+            var hintPos = new Vector2(hudArea.X + (hudArea.Width - hintSize.X) / 2, hudArea.Bottom - 30);
             spriteBatch.DrawString(_font, hintText, hintPos, new Color(150, 150, 150));
         }
         else if (state == Game.GameState.Paused)
         {
             var hintText = "Say 'resume game' or 'restart game'";
             var hintSize = _font.MeasureString(hintText);
-            var hintPos = new Vector2((screenWidth - hintSize.X) / 2, screenHeight - 30);
+            var hintPos = new Vector2(hudArea.X + (hudArea.Width - hintSize.X) / 2, hudArea.Bottom - 30);
             spriteBatch.DrawString(_font, hintText, hintPos, Color.Cyan);
         }
     }

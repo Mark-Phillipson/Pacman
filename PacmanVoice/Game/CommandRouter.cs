@@ -1,5 +1,6 @@
 using PacmanVoice.Voice;
 using Microsoft.Xna.Framework;
+using System.Collections.Generic;
 
 namespace PacmanVoice.Game;
 
@@ -11,6 +12,7 @@ public class CommandRouter
     private readonly GameSimulation _simulation;
     private readonly Microsoft.Xna.Framework.Game _game;
     private string _lastStatus = string.Empty;
+    private readonly Queue<CommandType> _queuedCommands = new();
 
     public string LastStatus => _lastStatus;
 
@@ -20,7 +22,33 @@ public class CommandRouter
         _game = game;
     }
 
+    /// <summary>
+    /// Runs at most one queued command. Call once per frame/tick.
+    /// </summary>
+    public void Update()
+    {
+        if (_queuedCommands.Count == 0) return;
+
+        var next = _queuedCommands.Dequeue();
+        HandleCommandInternal(new RecognitionResult { Command = next, Commands = new List<CommandType> { next } });
+    }
+
     public void HandleCommand(RecognitionResult result)
+    {
+        // If multiple commands were recognized (typically a direction sequence), queue them.
+        if (result.Commands is { Count: > 1 })
+        {
+            foreach (var cmd in result.Commands)
+            {
+                _queuedCommands.Enqueue(cmd);
+            }
+            return;
+        }
+
+        HandleCommandInternal(result);
+    }
+
+    private void HandleCommandInternal(RecognitionResult result)
     {
         // Handle commands based on current game state
         var state = _simulation.State;

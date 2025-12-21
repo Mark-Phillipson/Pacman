@@ -26,6 +26,11 @@ public class GameRenderer
 
     public void Draw(SpriteBatch spriteBatch, int screenWidth, int screenHeight)
     {
+        Draw(spriteBatch, new Rectangle(0, 0, screenWidth, screenHeight));
+    }
+
+    public void Draw(SpriteBatch spriteBatch, Rectangle playfieldArea)
+    {
         if (_pixelTexture == null) return;
 
         var (gridWidth, gridHeight) = _simulation.GetGridSize();
@@ -33,9 +38,9 @@ public class GameRenderer
         var pellets = _simulation.GetPellets();
         var ghosts = _simulation.GetGhosts();
 
-        // Calculate offset to center the grid
-        var offsetX = (screenWidth - gridWidth * CellSize) / 2;
-        var offsetY = 100; // Leave space for HUD at top
+        // Center the grid inside the playfield (keeps HUD separate)
+        var offsetX = playfieldArea.X + (playfieldArea.Width - gridWidth * CellSize) / 2;
+        var offsetY = playfieldArea.Y + (playfieldArea.Height - gridHeight * CellSize) / 2;
 
         // Draw walls
         for (int x = 0; x < gridWidth; x++)

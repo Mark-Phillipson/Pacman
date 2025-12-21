@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace PacmanVoice.Voice;
 
 /// <summary>
@@ -32,6 +34,11 @@ public enum CommandType
 public class RecognitionResult
 {
     public CommandType Command { get; set; }
+    /// <summary>
+    /// If provided, represents one or more recognized commands in order.
+    /// For single-command recognitions, this will typically contain one item.
+    /// </summary>
+    public List<CommandType> Commands { get; set; } = new();
     public float Confidence { get; set; }
     public string Text { get; set; } = string.Empty;
     public bool IsRejected { get; set; }

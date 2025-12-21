@@ -15,6 +15,7 @@ public class PacmanGame : Microsoft.Xna.Framework.Game
     private GraphicsDeviceManager _graphics;
     private SpriteBatch? _spriteBatch;
     private SpriteFont? _font;
+    private Texture2D? _pixelTexture;
 
     private SimulationClock? _clock;
     private GameSimulation? _simulation;
@@ -34,7 +35,7 @@ public class PacmanGame : Microsoft.Xna.Framework.Game
 
         // Set window size
         _graphics.PreferredBackBufferWidth = 800;
-        _graphics.PreferredBackBufferHeight = 700;
+        _graphics.PreferredBackBufferHeight = 860;
     }
 
     protected override void Initialize()
@@ -110,6 +111,10 @@ public class PacmanGame : Microsoft.Xna.Framework.Game
     {
         _spriteBatch = new SpriteBatch(GraphicsDevice);
 
+        // 1x1 pixel texture for simple UI lines (border)
+        _pixelTexture = new Texture2D(GraphicsDevice, 1, 1);
+        _pixelTexture.SetData(new[] { Color.White });
+
         try
         {
             // Load font
@@ -155,6 +160,8 @@ public class PacmanGame : Microsoft.Xna.Framework.Game
         // Update simulation (only if clock is running)
         if (_clock.IsRunning)
         {
+            // Execute at most one queued voice command per frame
+            _commandRouter?.Update();
             _simulation.Update(deltaSeconds);
         }
 
@@ -177,11 +184,26 @@ public class PacmanGame : Microsoft.Xna.Framework.Game
         }
         else if (_initialized && _gameRenderer != null && _hudOverlay != null)
         {
+            const int hudHeight = 140;
+            const int borderThickness = 4;
+
+            var screenWidth = _graphics.PreferredBackBufferWidth;
+            var screenHeight = _graphics.PreferredBackBufferHeight;
+            var playfieldHeight = screenHeight - hudHeight - borderThickness;
+
             // Draw game
-            _gameRenderer.Draw(_spriteBatch, _graphics.PreferredBackBufferWidth, _graphics.PreferredBackBufferHeight);
+            _gameRenderer.Draw(_spriteBatch, new Rectangle(0, 0, screenWidth, playfieldHeight));
+
+            // Bottom border separating playfield from HUD
+            if (_pixelTexture != null)
+            {
+                var borderRect = new Rectangle(0, playfieldHeight, screenWidth, borderThickness);
+                _spriteBatch.Draw(_pixelTexture, borderRect, Color.White);
+            }
 
             // Draw HUD
-            _hudOverlay.Draw(_spriteBatch, _graphics.PreferredBackBufferWidth, _graphics.PreferredBackBufferHeight);
+            var hudArea = new Rectangle(0, playfieldHeight + borderThickness, screenWidth, hudHeight);
+            _hudOverlay.Draw(_spriteBatch, screenWidth, screenHeight, hudArea);
         }
         else
         {
