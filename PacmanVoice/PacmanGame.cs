@@ -119,7 +119,7 @@ public class PacmanGame : Microsoft.Xna.Framework.Game
 
             if (_gameRenderer != null)
             {
-                _gameRenderer.LoadContent(GraphicsDevice);
+                _gameRenderer.LoadContent(Content, GraphicsDevice);
             }
 
             if (_hudOverlay != null)
