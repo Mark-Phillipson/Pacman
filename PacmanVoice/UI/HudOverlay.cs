@@ -59,6 +59,15 @@ public class HudOverlay
             var powerUpColor = (int)(_simulation.PowerUpTimeRemaining % 0.4) > 0.2 ? Color.LimeGreen : Color.White;
             spriteBatch.DrawString(_font, powerUpText, new Vector2(hudArea.X + 10, hudArea.Y + 35), powerUpColor);
         }
+        
+        // Draw respawn countdown if respawning
+        if (_simulation.IsRespawning)
+        {
+            var respawnText = $"RESPAWNING... {_simulation.RespawnTimeRemaining:F1}s";
+            var respawnSize = _font.MeasureString(respawnText);
+            var respawnPos = new Vector2(hudArea.X + (hudArea.Width - respawnSize.X) / 2, hudArea.Y + 35);
+            spriteBatch.DrawString(_font, respawnText, respawnPos, Color.Orange);
+        }
 
         // Draw last recognized command
         if (!string.IsNullOrEmpty(_voiceController.LastRecognizedText))

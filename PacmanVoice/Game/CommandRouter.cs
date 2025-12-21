@@ -71,19 +71,23 @@ public class CommandRouter
         switch (result.Command)
         {
             case CommandType.Up:
-                _simulation.SetDirection(Direction.Up);
+                if (state == GameState.Playing)
+                    _simulation.SetDirection(Direction.Up);
                 break;
 
             case CommandType.Down:
-                _simulation.SetDirection(Direction.Down);
+                if (state == GameState.Playing)
+                    _simulation.SetDirection(Direction.Down);
                 break;
 
             case CommandType.Left:
-                _simulation.SetDirection(Direction.Left);
+                if (state == GameState.Playing)
+                    _simulation.SetDirection(Direction.Left);
                 break;
 
             case CommandType.Right:
-                _simulation.SetDirection(Direction.Right);
+                if (state == GameState.Playing)
+                    _simulation.SetDirection(Direction.Right);
                 break;
 
             case CommandType.BeginGame:

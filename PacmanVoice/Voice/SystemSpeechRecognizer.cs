@@ -205,7 +205,7 @@ public class SystemSpeechRecognizer : IRecognizer, IDisposable
         }
 
         // 1) If connectors are present, split on them and map each segment
-        var connectorPattern = $@"\\b(?:{string.Join("|", DirectionConnectors.Select(Regex.Escape))})\\b";
+        var connectorPattern = $@"\b(?:{string.Join("|", DirectionConnectors.Select(Regex.Escape))})\b";
         var parts = Regex
             .Split(text, connectorPattern, RegexOptions.IgnoreCase)
             .Select(p => p.Trim())
@@ -280,7 +280,7 @@ public class SystemSpeechRecognizer : IRecognizer, IDisposable
     private static string NormalizeSpaces(string text)
     {
         if (string.IsNullOrWhiteSpace(text)) return string.Empty;
-        return Regex.Replace(text.Trim(), @"\\s+", " ");
+        return Regex.Replace(text.Trim(), @"\s+", " ");
     }
 
     private static string StripLeadingConnector(string text)

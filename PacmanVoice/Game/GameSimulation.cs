@@ -13,6 +13,7 @@ public class GameSimulation
     private const double MoveInterval = 0.15; // seconds per grid cell
     private const double GhostSpeedMultiplierLevel2 = 0.85; // Ghosts move 15% faster on level 2
     private const double PowerUpDuration = 8.0; // Power-up lasts 8 seconds when fruit is eaten
+    private const double RespawnDelay = 2.0; // Pause for 2 seconds after death before resuming
 
     // Classic-inspired: start on a safe corridor near the lower middle.
     private static readonly GridPosition PacmanStart = new(13, 23);
@@ -30,6 +31,7 @@ public class GameSimulation
     private GridPosition _pacmanPos;
     private Direction _currentDirection = Direction.None;
     private Direction _nextDirection = Direction.None;
+    private readonly Queue<Direction> _directionQueue = new();
     private double _moveTimer;
     private int _score;
     private int _lives = 3;
@@ -47,6 +49,10 @@ public class GameSimulation
     private GridPosition? _fruitPosition = null;
     private Random _fruitRandom = new();
     private const int FruitSpawnChance = 15; // Percentage chance to spawn fruit when eating a pellet
+    
+    // Respawn system
+    private bool _isRespawning = false;
+    private double _respawnTimer = 0;
 
     public event Action? PlayerDied;
     public event Action? PelletEaten;
@@ -67,6 +73,8 @@ public class GameSimulation
     public double PowerUpTimeRemaining => _isPowerUpActive ? Math.Max(0, PowerUpDuration - _powerUpTimer) : 0;
     public GridPosition? FruitPosition => _fruitPosition;
     public int GhostsEatenDuringPowerUp => _ghostsEatenDuringPowerUp;
+    public bool IsRespawning => _isRespawning;
+    public double RespawnTimeRemaining => _isRespawning ? Math.Max(0, RespawnDelay - _respawnTimer) : 0;
 
     public GameSimulation()
     {
@@ -341,6 +349,18 @@ public class GameSimulation
     {
         if (_state != GameState.Playing) return;
 
+        // Handle respawn delay after death
+        if (_isRespawning)
+        {
+            _respawnTimer += deltaSeconds;
+            if (_respawnTimer >= RespawnDelay)
+            {
+                _isRespawning = false;
+                _respawnTimer = 0;
+            }
+            return; // Don't process game logic during respawn
+        }
+
         _moveTimer += deltaSeconds;
         
         // Update power-up timer
@@ -360,11 +380,21 @@ public class GameSimulation
         {
             _moveTimer -= MoveInterval;
 
-            // Try to change direction if requested
+            // If there is no pending direction, peek the next queued one
+            if (_nextDirection == Direction.None && _directionQueue.Count > 0)
+            {
+                _nextDirection = _directionQueue.Peek();
+            }
+
+            // Try to change direction at grid boundary
             if (_nextDirection != Direction.None && CanMove(_nextDirection))
             {
                 _currentDirection = _nextDirection;
                 _nextDirection = Direction.None;
+                if (_directionQueue.Count > 0)
+                {
+                    _directionQueue.Dequeue();
+                }
             }
 
             // Move pacman
@@ -475,6 +505,10 @@ public class GameSimulation
         }
 
         ResetActorsAfterDeath();
+        
+        // Enter respawn state with delay
+        _isRespawning = true;
+        _respawnTimer = 0;
     }
     
     private void SpawnFruit()
@@ -503,6 +537,7 @@ public class GameSimulation
         _pacmanPos = PacmanStart;
         _currentDirection = Direction.None;
         _nextDirection = Direction.None;
+        _directionQueue.Clear();
         _moveTimer = 0;
         _isPowerUpActive = false;
         _powerUpTimer = 0;
@@ -521,11 +556,14 @@ public class GameSimulation
         LevelCompleted?.Invoke();
         _currentDirection = Direction.None;
         _nextDirection = Direction.None;
+        _directionQueue.Clear();
         _moveTimer = 0;
         _isPowerUpActive = false;
         _powerUpTimer = 0;
         _ghostsEatenDuringPowerUp = 0;
         _fruitPosition = null;
+        _isRespawning = false;
+        _respawnTimer = 0;
         InitializeLevel();
         LevelStart?.Invoke();
     }
@@ -541,7 +579,16 @@ public class GameSimulation
 
     public void SetDirection(Direction direction)
     {
-        _nextDirection = direction;
+        // If a direction is already pending for the next move tick,
+        // queue this request to be applied on subsequent ticks.
+        if (_nextDirection == Direction.None)
+        {
+            _nextDirection = direction;
+        }
+        else
+        {
+            _directionQueue.Enqueue(direction);
+        }
     }
 
     public void Begin()
@@ -549,7 +596,10 @@ public class GameSimulation
         _state = GameState.Playing;
         _currentDirection = Direction.None;
         _nextDirection = Direction.None;
+        _directionQueue.Clear();
         _moveTimer = 0;
+        _isRespawning = false;
+        _respawnTimer = 0;
         LevelStart?.Invoke();
     }
 
@@ -573,10 +623,13 @@ public class GameSimulation
         _moveTimer = 0;
         _currentDirection = Direction.None;
         _nextDirection = Direction.None;
+        _directionQueue.Clear();
         _isPowerUpActive = false;
         _powerUpTimer = 0;
         _ghostsEatenDuringPowerUp = 0;
         _fruitPosition = null;
+        _isRespawning = false;
+        _respawnTimer = 0;
         InitializeLevel();
         _state = GameState.Playing;
     }
