@@ -12,6 +12,7 @@ public class GameSimulation
     private const int GridHeight = 31;
     private const double MoveInterval = 0.15; // seconds per grid cell
     private const double GhostSpeedMultiplierLevel2 = 0.85; // Ghosts move 15% faster on level 2
+    private const double PowerUpDuration = 8.0; // Power-up lasts 8 seconds when fruit is eaten
 
     // Classic-inspired: start on a safe corridor near the lower middle.
     private static readonly GridPosition PacmanStart = new(13, 23);
@@ -38,12 +39,23 @@ public class GameSimulation
     private bool[,] _pellets = new bool[GridWidth, GridHeight];
     private bool[,] _walls = new bool[GridWidth, GridHeight];
     private List<Ghost> _ghosts = new();
+    
+    // Power-up system fields
+    private bool _isPowerUpActive = false;
+    private double _powerUpTimer = 0;
+    private int _ghostsEatenDuringPowerUp = 0;
+    private GridPosition? _fruitPosition = null;
+    private Random _fruitRandom = new();
+    private const int FruitSpawnChance = 15; // Percentage chance to spawn fruit when eating a pellet
 
     public event Action? PlayerDied;
     public event Action? PelletEaten;
     public event Action? GhostEaten;
     public event Action? LevelStart;
     public event Action? LevelCompleted;
+    public event Action? PowerUpActivated;
+    public event Action? PowerUpEnded;
+    public event Action? FruitEaten;
 
     public GameState State => _state;
     public GridPosition PacmanPosition => _pacmanPos;
@@ -51,6 +63,10 @@ public class GameSimulation
     public int Score => _score;
     public int Lives => _lives;
     public int CurrentLevel => _currentLevel;
+    public bool IsPowerUpActive => _isPowerUpActive;
+    public double PowerUpTimeRemaining => _isPowerUpActive ? Math.Max(0, PowerUpDuration - _powerUpTimer) : 0;
+    public GridPosition? FruitPosition => _fruitPosition;
+    public int GhostsEatenDuringPowerUp => _ghostsEatenDuringPowerUp;
 
     public GameSimulation()
     {
@@ -326,6 +342,19 @@ public class GameSimulation
         if (_state != GameState.Playing) return;
 
         _moveTimer += deltaSeconds;
+        
+        // Update power-up timer
+        if (_isPowerUpActive)
+        {
+            _powerUpTimer += deltaSeconds;
+            if (_powerUpTimer >= PowerUpDuration)
+            {
+                _isPowerUpActive = false;
+                _powerUpTimer = 0;
+                _ghostsEatenDuringPowerUp = 0;
+                PowerUpEnded?.Invoke();
+            }
+        }
 
         if (_moveTimer >= MoveInterval)
         {
@@ -351,11 +380,28 @@ public class GameSimulation
                     _pelletsEaten++;
                     PelletEaten?.Invoke();
 
+                    // Chance to spawn fruit
+                    if (_fruitPosition == null && _fruitRandom.Next(100) < FruitSpawnChance)
+                    {
+                        SpawnFruit();
+                    }
+
                     // Check if level is complete
                     if (_pelletsEaten >= _totalPellets)
                     {
                         AdvanceLevel();
                     }
+                }
+                
+                // Check fruit collection
+                if (_fruitPosition.HasValue && _pacmanPos == _fruitPosition.Value)
+                {
+                    _fruitPosition = null;
+                    _isPowerUpActive = true;
+                    _powerUpTimer = 0;
+                    _ghostsEatenDuringPowerUp = 0;
+                    FruitEaten?.Invoke();
+                    PowerUpActivated?.Invoke();
                 }
 
                 if (TryHandlePacmanGhostCollision())
@@ -387,11 +433,34 @@ public class GameSimulation
                 continue;
             }
 
-            LoseLife();
-            return true;
+            if (_isPowerUpActive)
+            {
+                // Pacman eats the ghost during power-up
+                EatGhost(ghost);
+                return false;
+            }
+            else
+            {
+                // Ghost kills Pacman
+                LoseLife();
+                return true;
+            }
         }
 
         return false;
+    }
+    
+    private void EatGhost(Ghost ghost)
+    {
+        // Calculate bonus points: 200, 400, 800, 1600 for 1st through 4th ghost
+        int[] bonusPoints = [200, 400, 800, 1600];
+        int ghostIndex = Math.Min(_ghostsEatenDuringPowerUp, bonusPoints.Length - 1);
+        int points = bonusPoints[ghostIndex];
+        
+        _score += points;
+        _ghostsEatenDuringPowerUp++;
+        ghost.ResetToStart();
+        GhostEaten?.Invoke();
     }
 
     private void LoseLife()
@@ -407,6 +476,27 @@ public class GameSimulation
 
         ResetActorsAfterDeath();
     }
+    
+    private void SpawnFruit()
+    {
+        // Find a random walkable position to spawn the fruit
+        List<GridPosition> validPositions = new();
+        for (int x = 1; x < GridWidth - 1; x++)
+        {
+            for (int y = 1; y < GridHeight - 1; y++)
+            {
+                if (!_walls[x, y])
+                {
+                    validPositions.Add(new GridPosition(x, y));
+                }
+            }
+        }
+
+        if (validPositions.Count > 0)
+        {
+            _fruitPosition = validPositions[_fruitRandom.Next(validPositions.Count)];
+        }
+    }
 
     private void ResetActorsAfterDeath()
     {
@@ -414,6 +504,10 @@ public class GameSimulation
         _currentDirection = Direction.None;
         _nextDirection = Direction.None;
         _moveTimer = 0;
+        _isPowerUpActive = false;
+        _powerUpTimer = 0;
+        _ghostsEatenDuringPowerUp = 0;
+        _fruitPosition = null;
 
         foreach (var ghost in _ghosts)
         {
@@ -428,6 +522,10 @@ public class GameSimulation
         _currentDirection = Direction.None;
         _nextDirection = Direction.None;
         _moveTimer = 0;
+        _isPowerUpActive = false;
+        _powerUpTimer = 0;
+        _ghostsEatenDuringPowerUp = 0;
+        _fruitPosition = null;
         InitializeLevel();
         LevelStart?.Invoke();
     }
@@ -475,6 +573,10 @@ public class GameSimulation
         _moveTimer = 0;
         _currentDirection = Direction.None;
         _nextDirection = Direction.None;
+        _isPowerUpActive = false;
+        _powerUpTimer = 0;
+        _ghostsEatenDuringPowerUp = 0;
+        _fruitPosition = null;
         InitializeLevel();
         _state = GameState.Playing;
     }
@@ -521,6 +623,7 @@ public class GameSimulation
     public bool[,] GetPellets() => _pellets;
     public IReadOnlyList<Ghost> GetGhosts() => _ghosts;
     public (int Width, int Height) GetGridSize() => (GridWidth, GridHeight);
+    public GridPosition? GetFruitPosition() => _fruitPosition;
 }
 
 /// <summary>

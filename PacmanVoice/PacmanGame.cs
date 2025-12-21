@@ -64,6 +64,8 @@ public class PacmanGame : Microsoft.Xna.Framework.Game
             _simulation.PelletEaten += () => _soundManager?.PlaySound("eatfruit", 0.5f);
             _simulation.GhostEaten += () => _soundManager?.PlaySound("eatghost", 0.7f);
             _simulation.LevelStart += () => _soundManager?.PlaySound("theme", 0.6f);
+            _simulation.PowerUpActivated += () => _soundManager?.PlaySound("freeman", 1.0f);
+            _simulation.FruitEaten += () => _soundManager?.PlaySound("eatfruit", 0.8f);
 
             // Load voice commands configuration
             var configPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "voice-commands.json");

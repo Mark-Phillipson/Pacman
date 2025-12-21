@@ -51,6 +51,14 @@ public class HudOverlay
         // Draw game status in the HUD panel
         var statusText = $"Level: {_simulation.CurrentLevel}  Score: {_simulation.Score}  Lives: {_simulation.Lives}  State: {state}";
         spriteBatch.DrawString(_font, statusText, new Vector2(hudArea.X + 10, hudArea.Y + 10), Color.White);
+        
+        // Draw power-up status if active
+        if (_simulation.IsPowerUpActive)
+        {
+            var powerUpText = $"POWER-UP! ({_simulation.PowerUpTimeRemaining:F1}s)  Ghosts Eaten: {_simulation.GhostsEatenDuringPowerUp}";
+            var powerUpColor = (int)(_simulation.PowerUpTimeRemaining % 0.4) > 0.2 ? Color.LimeGreen : Color.White;
+            spriteBatch.DrawString(_font, powerUpText, new Vector2(hudArea.X + 10, hudArea.Y + 35), powerUpColor);
+        }
 
         // Draw last recognized command
         if (!string.IsNullOrEmpty(_voiceController.LastRecognizedText))

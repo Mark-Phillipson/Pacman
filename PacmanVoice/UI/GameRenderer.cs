@@ -141,6 +141,30 @@ public class GameRenderer
                 }
             }
         }
+        
+        // Draw fruit if present
+        var fruitPos = _simulation.GetFruitPosition();
+        if (fruitPos.HasValue)
+        {
+            var fruitRect = new Rectangle(
+                offsetX + fruitPos.Value.X * CellSize,
+                offsetY + fruitPos.Value.Y * CellSize,
+                CellSize,
+                CellSize
+            );
+            
+            // Draw fruit with a distinctive color or texture
+            // Using cherry for now - can be any fruit texture
+            if (_fruitTextures.TryGetValue("cherry", out var fruitTexture) && fruitTexture != null)
+            {
+                spriteBatch.Draw(fruitTexture, fruitRect, Color.White);
+            }
+            else
+            {
+                // Fallback to red rectangle for fruit
+                spriteBatch.Draw(_pixelTexture, fruitRect, Color.Red);
+            }
+        }
 
         // Draw ghosts with sprites or fallback to colored rectangles
         int ghostIndex = 0;
@@ -189,7 +213,26 @@ public class GameRenderer
         }
         else
         {
-            spriteBatch.Draw(_pixelTexture, pacmanRect, Color.Yellow);
+            // Fallback to colored rectangle - change color if power-up is active
+            var pacmanColor = _simulation.IsPowerUpActive ? Color.LimeGreen : Color.Yellow;
+            spriteBatch.Draw(_pixelTexture, pacmanRect, pacmanColor);
+        }
+        
+        // Draw power-up indicator if active
+        if (_simulation.IsPowerUpActive)
+        {
+            var timeRemaining = _simulation.PowerUpTimeRemaining;
+            var alpha = (byte)((timeRemaining % 0.5) > 0.25 ? 255 : 128); // Blinking effect
+            var glowColor = Color.LimeGreen * (alpha / 255.0f);
+            
+            // Draw a glow around Pacman
+            var glowRect = new Rectangle(
+                offsetX + pacmanPos.X * CellSize - 2,
+                offsetY + pacmanPos.Y * CellSize - 2,
+                CellSize + 4,
+                CellSize + 4
+            );
+            spriteBatch.Draw(_pixelTexture, glowRect, glowColor);
         }
     }
     
