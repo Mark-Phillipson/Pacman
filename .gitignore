@@ -1,2 +1,8 @@
 MSCHOMP.EXE
 Neave Pac-Man.exe
+bin/
+obj/
+*.user
+*.suo
+.vs/
+
