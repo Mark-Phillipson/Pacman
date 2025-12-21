@@ -23,6 +23,7 @@ public class PacmanGame : Microsoft.Xna.Framework.Game
     private CommandRouter? _commandRouter;
     private GameRenderer? _gameRenderer;
     private HudOverlay? _hudOverlay;
+    private SoundEffectManager? _soundManager;
 
     private bool _initialized = false;
     private string? _initError = null;
@@ -55,21 +56,14 @@ public class PacmanGame : Microsoft.Xna.Framework.Game
             _simulation = new GameSimulation();
             _commandRouter = new CommandRouter(_simulation, this);
 
-            // Play a simple "death" sound on collision (no content assets required)
-            _simulation.PlayerDied += () =>
-            {
-                try
-                {
-                    if (OperatingSystem.IsWindows())
-                    {
-                        Console.Beep(440, 150);
-                    }
-                }
-                catch
-                {
-                    // Ignore if beep isn't supported in the current host.
-                }
-            };
+            // Initialize sound manager
+            _soundManager = new SoundEffectManager(Content);
+
+            // Subscribe to game events for sound effects
+            _simulation.PlayerDied += () => _soundManager?.PlaySound("death", 0.8f);
+            _simulation.PelletEaten += () => _soundManager?.PlaySound("eatfruit", 0.5f);
+            _simulation.GhostEaten += () => _soundManager?.PlaySound("eatghost", 0.7f);
+            _simulation.LevelStart += () => _soundManager?.PlaySound("theme", 0.6f);
 
             // Load voice commands configuration
             var configPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "voice-commands.json");
@@ -119,6 +113,9 @@ public class PacmanGame : Microsoft.Xna.Framework.Game
         {
             // Load font
             _font = Content.Load<SpriteFont>("DefaultFont");
+
+            // Load sound effects
+            _soundManager?.LoadSounds();
 
             if (_gameRenderer != null)
             {
@@ -241,6 +238,7 @@ public class PacmanGame : Microsoft.Xna.Framework.Game
         if (disposing)
         {
             _voiceController?.Dispose();
+            _soundManager?.Dispose();
         }
         base.Dispose(disposing);
     }

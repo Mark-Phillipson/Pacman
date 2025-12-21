@@ -36,6 +36,9 @@ public class GameSimulation
     private List<Ghost> _ghosts = new();
 
     public event Action? PlayerDied;
+    public event Action? PelletEaten;
+    public event Action? GhostEaten;
+    public event Action? LevelStart;
 
     public GameState State => _state;
     public GridPosition PacmanPosition => _pacmanPos;
@@ -196,6 +199,7 @@ public class GameSimulation
                 {
                     _pellets[_pacmanPos.X, _pacmanPos.Y] = false;
                     _score += 10;
+                    PelletEaten?.Invoke();
                 }
 
                 if (TryHandlePacmanGhostCollision())
@@ -272,6 +276,7 @@ public class GameSimulation
         _currentDirection = Direction.None;
         _nextDirection = Direction.None;
         _moveTimer = 0;
+        LevelStart?.Invoke();
     }
 
     public void Pause()

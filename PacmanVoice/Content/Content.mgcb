@@ -20,3 +20,33 @@
 /processorParam:TextureFormat=Compressed
 /build:DefaultFont.spritefont
 
+#begin Audio/DEATH.WAV
+/importer:WavImporter
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:Audio/DEATH.WAV
+
+#begin Audio/EATFRUIT.WAV
+/importer:WavImporter
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:Audio/EATFRUIT.WAV
+
+#begin Audio/EATGHOST.WAV
+/importer:WavImporter
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:Audio/EATGHOST.WAV
+
+#begin Audio/FREEMAN.WAV
+/importer:WavImporter
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:Audio/FREEMAN.WAV
+
+#begin Audio/THEME.WAV
+/importer:WavImporter
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:Audio/THEME.WAV
+
