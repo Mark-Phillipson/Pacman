@@ -15,6 +15,11 @@ public class HudOverlay
     private readonly Game.GameSimulation _simulation;
     private readonly Game.CommandRouter _router;
 
+    // Game over banner animation
+    private double _gameOverBannerTimer = 0.0;
+    private const double BannerDropDuration = 1.0; // seconds to drop the banner
+    private const double BannerHeight = 120;
+
     public HudOverlay(VoiceInputController voiceController, Game.GameSimulation simulation, Game.CommandRouter router)
     {
         _voiceController = voiceController;
@@ -32,6 +37,19 @@ public class HudOverlay
         // Create a 1x1 white pixel texture for drawing rectangles
         _pixelTexture = new Texture2D(graphicsDevice, 1, 1);
         _pixelTexture.SetData(new[] { Color.White });
+    }
+
+    public void Update(double deltaTime)
+    {
+        // Update game over banner animation
+        if (_simulation.State == Game.GameState.GameOver)
+        {
+            _gameOverBannerTimer = System.Math.Min(_gameOverBannerTimer + deltaTime, BannerDropDuration);
+        }
+        else
+        {
+            _gameOverBannerTimer = 0.0;
+        }
     }
 
     public void Draw(SpriteBatch spriteBatch, int screenWidth, int screenHeight)
@@ -147,7 +165,51 @@ public class HudOverlay
             var hintPos = new Vector2(hudArea.X + (hudArea.Width - hintSize.X) / 2, hudArea.Bottom - 30);
             spriteBatch.DrawString(_font, hintText, hintPos, Color.Cyan);
         }
+        else if (state == Game.GameState.GameOver)
+        {
+            DrawGameOverBanner(spriteBatch, screenWidth, screenHeight);
+        }
     }
+
+    private void DrawGameOverBanner(SpriteBatch spriteBatch, int screenWidth, int screenHeight)
+    {
+        if (_font == null || _pixelTexture == null) return;
+
+        // Calculate banner position with drop animation
+        double progress = System.Math.Min(_gameOverBannerTimer / BannerDropDuration, 1.0);
+        int bannerY = (int)(progress * BannerHeight) - (int)BannerHeight;
+
+        var bannerRect = new Rectangle(0, bannerY, screenWidth, (int)BannerHeight);
+
+        // Draw semi-transparent dark background for banner
+        DrawRectangle(spriteBatch, bannerRect, new Color(0, 0, 0, 220));
+
+        // Draw "GAME OVER" text
+        var gameOverText = "GAME OVER";
+        var gameOverSize = _font.MeasureString(gameOverText);
+        var gameOverPos = new Vector2(
+            (screenWidth - gameOverSize.X) / 2,
+            bannerY + 15);
+        spriteBatch.DrawString(_font, gameOverText, gameOverPos, Color.Red);
+
+        // Draw final score
+        var scoreText = $"Final Score: {_simulation.Score}";
+        var scoreSize = _font.MeasureString(scoreText);
+        var scorePos = new Vector2(
+            (screenWidth - scoreSize.X) / 2,
+            bannerY + 50);
+        spriteBatch.DrawString(_font, scoreText, scorePos, Color.Yellow);
+
+        // Draw voice commands hint (only after banner has fully dropped)
+        if (progress >= 1.0)
+        {
+            var commandsText = "Say 'start new game' or 'quit to desktop'";
+            var commandsSize = _font.MeasureString(commandsText);
+            var commandsPos = new Vector2(
+                (screenWidth - commandsSize.X) / 2,
+                bannerY + 85);
+            spriteBatch.DrawString(_font, commandsText, commandsPos, Color.Cyan);
+        }    }
 
     private void DrawRectangle(SpriteBatch spriteBatch, Rectangle rect, Color color)
     {

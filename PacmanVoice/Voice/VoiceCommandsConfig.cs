@@ -40,6 +40,8 @@ public class CommandProfile
         if (Commands.TryGetValue("quitGame", out var quit)) map[quit] = CommandType.QuitGame;
         if (Commands.TryGetValue("quitConfirm", out var quitConfirm)) map[quitConfirm] = CommandType.QuitConfirm;
         if (Commands.TryGetValue("neverMind", out var neverMind)) map[neverMind] = CommandType.NeverMind;
+        if (Commands.TryGetValue("startNewGame", out var startNew)) map[startNew] = CommandType.StartNewGame;
+        if (Commands.TryGetValue("quitFromGameOver", out var quitGameOver)) map[quitGameOver] = CommandType.QuitFromGameOver;
 
         return map;
     }

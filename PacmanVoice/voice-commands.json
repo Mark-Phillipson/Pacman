@@ -17,7 +17,9 @@
         "repeatThat": "repeat that",
         "quitGame": "quit game",
         "quitConfirm": "quit confirm",
-        "neverMind": "never mind"
+        "neverMind": "never mind",
+        "startNewGame": "start new game",
+        "quitFromGameOver": "quit to desktop"
       }
     }
   }

@@ -67,6 +67,21 @@ public class CommandRouter
             return;
         }
 
+        // Handle game over state
+        if (state == GameState.GameOver)
+        {
+            switch (result.Command)
+            {
+                case CommandType.StartNewGame:
+                    _simulation.Restart();
+                    break;
+                case CommandType.QuitFromGameOver:
+                    _game.Exit();
+                    break;
+            }
+            return;
+        }
+
         // Handle commands based on type
         switch (result.Command)
         {
@@ -130,6 +145,14 @@ public class CommandRouter
             case CommandType.NeverMind:
                 // Can be used to dismiss status messages or other UI states
                 _lastStatus = string.Empty;
+                break;
+
+            case CommandType.StartNewGame:
+                // Only valid during game over state (handled above)
+                break;
+
+            case CommandType.QuitFromGameOver:
+                // Only valid during game over state (handled above)
                 break;
         }
     }

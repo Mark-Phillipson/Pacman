@@ -159,6 +159,9 @@ public class PacmanGame : Microsoft.Xna.Framework.Game
         // Update animation
         _gameRenderer?.Update(deltaSeconds);
 
+        // Update HUD overlay (for game over banner animation)
+        _hudOverlay?.Update(deltaSeconds);
+
         // Update simulation (only if clock is running)
         if (_clock.IsRunning)
         {

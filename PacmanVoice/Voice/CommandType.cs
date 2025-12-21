@@ -24,6 +24,10 @@ public enum CommandType
     QuitConfirm,
     NeverMind,
 
+    // Game over commands
+    StartNewGame,
+    QuitFromGameOver,
+
     // Unknown/rejected
     Unknown
 }
