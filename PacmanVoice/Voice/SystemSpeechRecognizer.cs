@@ -2,12 +2,14 @@ using System.Speech.Recognition;
 using System.Collections.Generic;
 using System;
 using System.Linq;
+using System.Runtime.Versioning;
 
 namespace PacmanVoice.Voice;
 
 /// <summary>
 /// Speech recognizer using System.Speech (offline recognition)
 /// </summary>
+[SupportedOSPlatform("windows")]
 public class SystemSpeechRecognizer : IRecognizer, IDisposable
 {
     private SpeechRecognitionEngine? _recognizer;

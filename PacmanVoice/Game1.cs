@@ -59,7 +59,10 @@ public class Game1 : Microsoft.Xna.Framework.Game
             {
                 try
                 {
-                    Console.Beep(440, 150);
+                    if (OperatingSystem.IsWindows())
+                    {
+                        Console.Beep(440, 150);
+                    }
                 }
                 catch
                 {
