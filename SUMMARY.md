@@ -138,7 +138,7 @@ This implementation fully satisfies all requirements specified in `plan-pacmanVo
   - `Voice/` - Speech recognition abstraction and implementation
   - `UI/` - Rendering and HUD
   - `Content/` - Assets (font)
-  - `Game1.cs` - Main game class
+  - `PacmanGame.cs` - Main game class
   - `voice-commands.json` - Command configuration
 
 ### Documentation (3 files)

@@ -105,7 +105,7 @@ Displays game state and hints:
 
 ### 5. Main Game Integration
 
-#### Game1.cs
+#### PacmanGame.cs
 MonoGame entry point that wires everything together:
 - Initializes all systems in proper order
 - Loads voice configuration
@@ -181,7 +181,7 @@ PacmanVoice/
 ├── Content/
 │   ├── Content.mgcb                 # MonoGame content pipeline
 │   └── DefaultFont.spritefont       # Font descriptor
-├── Game1.cs                         # Main game class
+├── PacmanGame.cs                    # Main game class
 ├── Program.cs                       # Entry point
 ├── voice-commands.json              # Command configuration
 └── PacmanVoice.csproj              # Project file

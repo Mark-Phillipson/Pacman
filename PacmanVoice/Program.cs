@@ -1,2 +1,2 @@
-﻿using var game = new PacmanVoice.Game1();
+﻿using var game = new PacmanVoice.PacmanGame();
 game.Run();

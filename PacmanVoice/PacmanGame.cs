@@ -1,4 +1,4 @@
-﻿using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using PacmanVoice.Core;
@@ -10,7 +10,7 @@ using System.IO;
 
 namespace PacmanVoice;
 
-public class Game1 : Microsoft.Xna.Framework.Game
+public class PacmanGame : Microsoft.Xna.Framework.Game
 {
     private GraphicsDeviceManager _graphics;
     private SpriteBatch? _spriteBatch;
@@ -26,7 +26,7 @@ public class Game1 : Microsoft.Xna.Framework.Game
     private bool _initialized = false;
     private string? _initError = null;
 
-    public Game1()
+    public PacmanGame()
     {
         _graphics = new GraphicsDeviceManager(this);
         Content.RootDirectory = "Content";
