@@ -12,14 +12,16 @@ public class GameSimulation
     private const int GridHeight = 31;
     private const double MoveInterval = 0.15; // seconds per grid cell
 
-    private static readonly GridPosition PacmanStart = new(GridWidth / 2, GridHeight / 2);
+    // Classic-inspired: start on a safe corridor near the lower middle.
+    private static readonly GridPosition PacmanStart = new(13, 23);
+
+    // Ghosts begin inside the central "pen".
     private static readonly (GridPosition Position, Direction Direction)[] GhostStartStates =
     [
-        // Simple "pen" near the center (2x2 block above Pac-Man's start)
-        (new GridPosition(GridWidth / 2 - 1, GridHeight / 2 - 2), Direction.Right),
-        (new GridPosition(GridWidth / 2, GridHeight / 2 - 2), Direction.Left),
-        (new GridPosition(GridWidth / 2 - 1, GridHeight / 2 - 1), Direction.Right),
-        (new GridPosition(GridWidth / 2, GridHeight / 2 - 1), Direction.Left),
+        (new GridPosition(12, 15), Direction.Left),
+        (new GridPosition(13, 15), Direction.Right),
+        (new GridPosition(14, 15), Direction.Left),
+        (new GridPosition(13, 16), Direction.Right),
     ];
 
     private GameState _state = GameState.NotStarted;
@@ -48,40 +50,111 @@ public class GameSimulation
 
     private void InitializeLevel()
     {
-        // Simple maze layout - walls around edges, some interior walls
+        // Classic-inspired maze: single-tile corridors surrounded by walls.
+        // Note: this is intentionally *inspired by* the arcade feel, not a 1:1 copy.
+
+        static void Carve(bool[,] walls, int x, int y)
+        {
+            walls[x, y] = false;
+        }
+
+        static void CarveH(bool[,] walls, int x1, int x2, int y)
+        {
+            if (x2 < x1) (x1, x2) = (x2, x1);
+            for (int x = x1; x <= x2; x++) walls[x, y] = false;
+        }
+
+        static void CarveV(bool[,] walls, int x, int y1, int y2)
+        {
+            if (y2 < y1) (y1, y2) = (y2, y1);
+            for (int y = y1; y <= y2; y++) walls[x, y] = false;
+        }
+
+        static void CarveRect(bool[,] walls, int x1, int y1, int x2, int y2)
+        {
+            if (x2 < x1) (x1, x2) = (x2, x1);
+            if (y2 < y1) (y1, y2) = (y2, y1);
+            for (int x = x1; x <= x2; x++)
+                for (int y = y1; y <= y2; y++)
+                    walls[x, y] = false;
+        }
+
+        // 1) Start with everything as a wall.
         for (int x = 0; x < GridWidth; x++)
         {
             for (int y = 0; y < GridHeight; y++)
             {
-                // Border walls
-                if (x == 0 || x == GridWidth - 1 || y == 0 || y == GridHeight - 1)
+                _walls[x, y] = true;
+                _pellets[x, y] = false;
+            }
+        }
+
+        // 2) Carve the outer ring corridor (inside the border).
+        CarveH(_walls, 1, GridWidth - 2, 1);
+        CarveH(_walls, 1, GridWidth - 2, GridHeight - 2);
+        CarveV(_walls, 1, 1, GridHeight - 2);
+        CarveV(_walls, GridWidth - 2, 1, GridHeight - 2);
+
+        // 3) Carve a central spine and several horizontal lanes.
+        var cx = GridWidth / 2 - 1; // 13 on 28-wide grid
+        CarveV(_walls, cx, 1, GridHeight - 2);
+
+        // Horizontal lanes (some bridge the center, some leave a central block)
+        int[] bridgeRows = [8, 22];
+        int[] gapRows = [4, 12, 18, 26];
+
+        foreach (var y in bridgeRows)
+        {
+            CarveH(_walls, 1, GridWidth - 2, y);
+        }
+
+        foreach (var y in gapRows)
+        {
+            CarveH(_walls, 1, cx - 2, y);
+            CarveH(_walls, cx + 2, GridWidth - 2, y);
+        }
+
+        // 4) Side vertical lanes to create the classic "grid" feel.
+        CarveV(_walls, 4, 1, GridHeight - 2);
+        CarveV(_walls, GridWidth - 5, 1, GridHeight - 2);
+        CarveV(_walls, 7, 2, GridHeight - 3);
+        CarveV(_walls, GridWidth - 8, 2, GridHeight - 3);
+
+        // 5) Corner rooms / pockets.
+        CarveRect(_walls, 2, 2, 6, 6);
+        CarveRect(_walls, GridWidth - 7, 2, GridWidth - 3, 6);
+        CarveRect(_walls, 2, GridHeight - 7, 6, GridHeight - 3);
+        CarveRect(_walls, GridWidth - 7, GridHeight - 7, GridWidth - 3, GridHeight - 3);
+
+        // 6) Central ghost pen (open interior), connected to the spine via two doors.
+        // Pen interior
+        CarveRect(_walls, cx - 2, 14, cx + 2, 16);
+        // Doors
+        Carve(_walls, cx, 13);
+        Carve(_walls, cx, 17);
+        // Small buffer corridors around the pen
+        CarveH(_walls, cx - 4, cx + 4, 13);
+        CarveH(_walls, cx - 4, cx + 4, 17);
+
+        // 7) Populate pellets on walkable tiles.
+        for (int x = 1; x <= GridWidth - 2; x++)
+        {
+            for (int y = 1; y <= GridHeight - 2; y++)
+            {
+                if (!_walls[x, y])
                 {
-                    _walls[x, y] = true;
-                    _pellets[x, y] = false;
-                }
-                else
-                {
-                    _walls[x, y] = false;
-                    _pellets[x, y] = true; // Place pellets everywhere except walls
+                    _pellets[x, y] = true;
                 }
             }
         }
 
-        // Add some interior walls for interest
-        for (int x = 5; x < 10; x++)
+        // No pellets inside the ghost pen.
+        for (int x = cx - 2; x <= cx + 2; x++)
         {
-            _walls[x, 10] = true;
-            _pellets[x, 10] = false;
-            _walls[x, 20] = true;
-            _pellets[x, 20] = false;
-        }
-
-        for (int x = 18; x < 23; x++)
-        {
-            _walls[x, 10] = true;
-            _pellets[x, 10] = false;
-            _walls[x, 20] = true;
-            _pellets[x, 20] = false;
+            for (int y = 14; y <= 16; y++)
+            {
+                _pellets[x, y] = false;
+            }
         }
 
         // Starting position
