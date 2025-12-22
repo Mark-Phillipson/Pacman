@@ -31,8 +31,7 @@ public class GameSimulation
     private GameState _state = GameState.NotStarted;
     private GridPosition _pacmanPos;
     private Direction _currentDirection = Direction.None;
-    private Direction _nextDirection = Direction.None;
-    private readonly Queue<Direction> _directionQueue = new();
+    private Direction _nextDirection = Direction.None; // latest requested direction; applied when possible
     private double _moveTimer;
     private double _ghostMoveTimer;
     private int _score;
@@ -366,12 +365,6 @@ public class GameSimulation
             {
                 _isRespawning = false;
                 _respawnTimer = 0;
-                
-                // Apply any queued direction that came in during respawn
-                if (_directionQueue.Count > 0)
-                {
-                    _nextDirection = _directionQueue.Dequeue();
-                }
             }
             return; // Don't process game logic during respawn
         }
@@ -559,8 +552,6 @@ public class GameSimulation
     {
         _pacmanPos = PacmanStart;
         _currentDirection = Direction.None;
-        _nextDirection = Direction.None;
-        _directionQueue.Clear();
         _moveTimer = 0;
         _isPowerUpActive = false;
         _powerUpTimer = 0;
@@ -580,7 +571,6 @@ public class GameSimulation
         LevelCompleted?.Invoke();
         _currentDirection = Direction.None;
         _nextDirection = Direction.None;
-        _directionQueue.Clear();
         _moveTimer = 0;
         _isPowerUpActive = false;
         _powerUpTimer = 0;
@@ -608,16 +598,9 @@ public class GameSimulation
 
     public void SetDirection(Direction direction)
     {
-        // If a direction is already pending for the next move tick,
-        // queue this request to be applied on subsequent ticks.
-        if (_nextDirection == Direction.None)
-        {
-            _nextDirection = direction;
-        }
-        else
-        {
-            _directionQueue.Enqueue(direction);
-        }
+        // Always keep the latest requested direction; it will be
+        // applied when the move from the current tile is valid.
+        _nextDirection = direction;
     }
 
     public void Begin()
@@ -625,7 +608,6 @@ public class GameSimulation
         _state = GameState.Playing;
         _currentDirection = Direction.None;
         _nextDirection = Direction.None;
-        _directionQueue.Clear();
         _moveTimer = 0;
         _ghostMoveTimer = 0;
         _isRespawning = false;
@@ -654,7 +636,6 @@ public class GameSimulation
         _ghostMoveTimer = 0;
         _currentDirection = Direction.None;
         _nextDirection = Direction.None;
-        _directionQueue.Clear();
         _isPowerUpActive = false;
         _powerUpTimer = 0;
         _ghostsEatenDuringPowerUp = 0;
@@ -694,17 +675,8 @@ public class GameSimulation
 
     private void RefreshDirections()
     {
-        // Pull the next requested direction if none is pending
-        if (_nextDirection == Direction.None && _directionQueue.Count > 0)
-        {
-            _nextDirection = _directionQueue.Dequeue();
-        }
-
-        // Drop any blocked pending directions so new queued inputs are not starved
-        while (_nextDirection != Direction.None && !CanMove(_nextDirection) && _directionQueue.Count > 0)
-        {
-            _nextDirection = _directionQueue.Dequeue();
-        }
+        // No queue logic: keep the latest requested direction in
+        // _nextDirection until it becomes valid from the current tile.
     }
 
     private GridPosition GetNextPosition(GridPosition pos, Direction direction)

@@ -94,17 +94,17 @@ public class HudOverlay
             spriteBatch.DrawString(_font, lastCmdText, new Vector2(hudArea.X + 10, hudArea.Y + 40), Color.LightGreen);
         }
 
-        // Draw listening indicator (in HUD panel)
+        // Draw listening indicator right-aligned in HUD (avoid covering status/last command)
         if (_voiceController.IsListening)
         {
             var listeningText = "LISTENING...";
             var size = _font.MeasureString(listeningText);
-            var pos = new Vector2(hudArea.X + (hudArea.Width - size.X) / 2, hudArea.Y + 10);
+            var pos = new Vector2(hudArea.Right - size.X - 10, hudArea.Y + 10);
             spriteBatch.DrawString(_font, listeningText, pos, Color.Yellow);
 
             var hintText = "Say 'never mind' to abort";
             var hintSize = _font.MeasureString(hintText);
-            var hintPos = new Vector2(hudArea.X + (hudArea.Width - hintSize.X) / 2, hudArea.Y + 40);
+            var hintPos = new Vector2(hudArea.Right - hintSize.X - 10, hudArea.Y + 40);
             spriteBatch.DrawString(_font, hintText, hintPos, Color.LightGray);
         }
 
@@ -153,7 +153,7 @@ public class HudOverlay
         }
         else if (state == Game.GameState.Playing)
         {
-            var hintText = "Directions: up, down, left, right | pause game | game status | quit game";
+            var hintText = "Directions: north, south, west, east | pause game | game status | quit game";
             var hintSize = _font.MeasureString(hintText);
             var hintPos = new Vector2(hudArea.X + (hudArea.Width - hintSize.X) / 2, hudArea.Bottom - 30);
             spriteBatch.DrawString(_font, hintText, hintPos, new Color(150, 150, 150));

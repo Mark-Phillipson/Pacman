@@ -2,11 +2,11 @@
   "defaultProfile": "default",
   "profiles": {
     "default": {
-      "directions": {
-        "up": "up",
-        "down": "down",
-        "left": "left",
-        "right": "right"
+      "compassDirections": {
+        "north": ["north", "n"],
+        "south": ["south", "s"],
+        "west": ["west", "w"],
+        "east": ["east", "e"]
       },
       "commands": {
         "beginGame": "begin game",

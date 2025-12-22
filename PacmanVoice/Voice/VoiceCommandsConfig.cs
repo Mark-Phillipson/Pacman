@@ -11,24 +11,43 @@ namespace PacmanVoice.Voice;
 /// </summary>
 public class VoiceCommandsConfig
 {
+    [JsonProperty("defaultProfile")]
     public string DefaultProfile { get; set; } = "default";
+    [JsonProperty("profiles")]
     public Dictionary<string, CommandProfile> Profiles { get; set; } = new();
 }
 
 public class CommandProfile
 {
+    // Legacy single-word directions (up/down/left/right). If present, used as fallback.
+    [JsonProperty("directions")]
     public Dictionary<string, string> Directions { get; set; } = new();
+    // Preferred: compass directions with optional synonyms per direction.
+    // Keys: "north","south","east","west"; values: list of phrases (e.g., ["north","n"]).
+    [JsonProperty("compassDirections")]
+    public Dictionary<string, List<string>> CompassDirections { get; set; } = new();
+    [JsonProperty("commands")]
     public Dictionary<string, string> Commands { get; set; } = new();
 
     public Dictionary<string, CommandType> GetCommandMap()
     {
         var map = new Dictionary<string, CommandType>(StringComparer.OrdinalIgnoreCase);
 
-        // Add directions
-        if (Directions.TryGetValue("up", out var up)) map[up] = CommandType.Up;
-        if (Directions.TryGetValue("down", out var down)) map[down] = CommandType.Down;
-        if (Directions.TryGetValue("left", out var left)) map[left] = CommandType.Left;
-        if (Directions.TryGetValue("right", out var right)) map[right] = CommandType.Right;
+        // Add directions: prefer compass synonyms if provided, otherwise legacy single phrases
+        if (CompassDirections.Count > 0)
+        {
+            AddCompass(map, "north", CommandType.Up);
+            AddCompass(map, "south", CommandType.Down);
+            AddCompass(map, "west", CommandType.Left);
+            AddCompass(map, "east", CommandType.Right);
+        }
+        else
+        {
+            if (Directions.TryGetValue("up", out var up)) map[up] = CommandType.Up;
+            if (Directions.TryGetValue("down", out var down)) map[down] = CommandType.Down;
+            if (Directions.TryGetValue("left", out var left)) map[left] = CommandType.Left;
+            if (Directions.TryGetValue("right", out var right)) map[right] = CommandType.Right;
+        }
 
         // Add commands
         if (Commands.TryGetValue("beginGame", out var begin)) map[begin] = CommandType.BeginGame;
@@ -49,7 +68,14 @@ public class CommandProfile
     public List<string> GetAllPhrases()
     {
         var phrases = new List<string>();
-        phrases.AddRange(Directions.Values);
+        if (CompassDirections.Count > 0)
+        {
+            phrases.AddRange(CompassDirections.Values.SelectMany(v => v));
+        }
+        else
+        {
+            phrases.AddRange(Directions.Values);
+        }
         phrases.AddRange(Commands.Values);
         return phrases;
     }
@@ -78,6 +104,18 @@ public class CommandProfile
         }
 
         return true;
+    }
+
+    private void AddCompass(Dictionary<string, CommandType> map, string key, CommandType cmd)
+    {
+        if (!CompassDirections.TryGetValue(key, out var phrases) || phrases == null) return;
+        foreach (var p in phrases)
+        {
+            if (!string.IsNullOrWhiteSpace(p))
+            {
+                map[p] = cmd;
+            }
+        }
     }
 }
 

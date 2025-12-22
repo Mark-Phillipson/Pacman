@@ -103,6 +103,15 @@ public class PacmanGame : Microsoft.Xna.Framework.Game
             // Update grammar with commands
             var phrases = profile.GetAllPhrases();
             var commandMap = profile.GetCommandMap();
+            
+            // Debug output to verify config loaded correctly
+            Console.WriteLine($"Loaded {phrases.Count} voice phrases:");
+            foreach (var phrase in phrases)
+            {
+                Console.WriteLine($"  - {phrase}");
+            }
+            Console.WriteLine($"Command map has {commandMap.Count} entries");
+            
             _voiceController.UpdateGrammar(phrases, commandMap);
 
             // Start voice recognition
