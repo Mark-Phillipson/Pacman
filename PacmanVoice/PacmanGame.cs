@@ -25,6 +25,9 @@ public class PacmanGame : Microsoft.Xna.Framework.Game
     private HudOverlay? _hudOverlay;
     private SoundEffectManager? _soundManager;
 
+
+
+
     private bool _initialized = false;
     private string? _initError = null;
 

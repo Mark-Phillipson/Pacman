@@ -386,21 +386,13 @@ public class GameSimulation
         {
             _moveTimer -= MoveInterval;
 
-            // If there is no pending direction, peek the next queued one
-            if (_nextDirection == Direction.None && _directionQueue.Count > 0)
-            {
-                _nextDirection = _directionQueue.Peek();
-            }
+            RefreshDirections();
 
             // Try to change direction at grid boundary
             if (_nextDirection != Direction.None && CanMove(_nextDirection))
             {
                 _currentDirection = _nextDirection;
                 _nextDirection = Direction.None;
-                if (_directionQueue.Count > 0)
-                {
-                    _directionQueue.Dequeue();
-                }
             }
 
             // Move pacman
@@ -665,6 +657,21 @@ public class GameSimulation
     {
         var nextPos = GetNextPosition(_pacmanPos, direction);
         return IsValidPosition(nextPos) && !_walls[nextPos.X, nextPos.Y];
+    }
+
+    private void RefreshDirections()
+    {
+        // Pull the next requested direction if none is pending
+        if (_nextDirection == Direction.None && _directionQueue.Count > 0)
+        {
+            _nextDirection = _directionQueue.Dequeue();
+        }
+
+        // Drop any blocked pending directions so new queued inputs are not starved
+        while (_nextDirection != Direction.None && !CanMove(_nextDirection) && _directionQueue.Count > 0)
+        {
+            _nextDirection = _directionQueue.Dequeue();
+        }
     }
 
     private GridPosition GetNextPosition(GridPosition pos, Direction direction)
