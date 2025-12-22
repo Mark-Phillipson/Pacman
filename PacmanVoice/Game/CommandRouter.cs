@@ -1,5 +1,6 @@
 using PacmanVoice.Voice;
 using Microsoft.Xna.Framework;
+using System;
 using System.Collections.Generic;
 
 namespace PacmanVoice.Game;
@@ -43,6 +44,7 @@ public class CommandRouter
         // If multiple commands were recognized (typically a direction sequence), queue them.
         if (result.Commands is { Count: > 1 })
         {
+            Console.WriteLine($"Queuing {result.Commands.Count} direction commands");
             foreach (var cmd in result.Commands)
             {
                 _queuedCommands.Enqueue(cmd);

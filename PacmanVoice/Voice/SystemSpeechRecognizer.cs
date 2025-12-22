@@ -173,6 +173,7 @@ public class SystemSpeechRecognizer : IRecognizer, IDisposable
         {
             commands = parsedDirections;
             commandType = commands[0];
+            Console.WriteLine($"Parsed direction sequence: {text} -> {string.Join(", ", commands)}");
         }
         else
         {

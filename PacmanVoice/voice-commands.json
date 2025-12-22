@@ -3,10 +3,10 @@
   "profiles": {
     "default": {
       "compassDirections": {
-        "north": ["north", "n"],
-        "south": ["south", "s"],
-        "west": ["west", "w"],
-        "east": ["east", "e"]
+        "north": ["north"],
+        "south": ["south", "down"],
+        "west": ["west", "left"],
+        "east": ["east", "right"]
       },
       "commands": {
         "beginGame": "begin game",
