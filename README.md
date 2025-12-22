@@ -38,7 +38,10 @@ On first run, Windows may prompt you to allow microphone access for speech recog
 ### Default Commands
 
 **Directions** (1 word, customizable):
-- `up`
+- `north`
+- `south`
+- `east`
+- `west`
 - `down`
 - `left`
 - `right`
@@ -71,10 +74,10 @@ Edit `voice-commands.json` to customize voice phrases:
   "profiles": {
     "default": {
       "directions": {
-        "up": "up",
-        "down": "down",
-        "left": "left",
-        "right": "right"
+        "north": "north",
+        "south": "south",
+        "east": "east",
+        "west": "west"
       },
       "commands": {
         "beginGame": "begin game",
