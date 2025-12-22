@@ -52,6 +52,126 @@ public class HudOverlay
         }
     }
 
+    public void DrawLeftHud(SpriteBatch spriteBatch, Rectangle hudArea, int screenWidth, int screenHeight)
+    {
+        if (_font == null || _pixelTexture == null) return;
+
+        var state = _simulation.State;
+
+        // Draw HUD background
+        DrawRectangle(spriteBatch, hudArea, new Color(0, 0, 0, 160));
+
+        // Draw game status vertically
+        var yPos = hudArea.Y + 10;
+        var levelText = $"Level: {_simulation.CurrentLevel}";
+        spriteBatch.DrawString(_font, levelText, new Vector2(hudArea.X + 5, yPos), Color.White);
+
+        yPos += 25;
+        var scoreText = $"Score: {_simulation.Score}";
+        spriteBatch.DrawString(_font, scoreText, new Vector2(hudArea.X + 5, yPos), Color.White);
+
+        yPos += 25;
+        var livesText = $"Lives: {_simulation.Lives}";
+        spriteBatch.DrawString(_font, livesText, new Vector2(hudArea.X + 5, yPos), Color.White);
+
+        // Draw power-up status if active
+        if (_simulation.IsPowerUpActive)
+        {
+            yPos += 30;
+            var powerUpText = $"POWER-UP!";
+            var powerUpColor = (int)(_simulation.PowerUpTimeRemaining % 0.4) > 0.2 ? Color.LimeGreen : Color.White;
+            spriteBatch.DrawString(_font, powerUpText, new Vector2(hudArea.X + 5, yPos), powerUpColor);
+
+            yPos += 20;
+            var timeText = $"{_simulation.PowerUpTimeRemaining:F1}s";
+            spriteBatch.DrawString(_font, timeText, new Vector2(hudArea.X + 5, yPos), powerUpColor);
+        }
+
+        // Draw respawn countdown if respawning
+        if (_simulation.IsRespawning)
+        {
+            yPos += 30;
+            var respawnText = $"RESPAWN";
+            spriteBatch.DrawString(_font, respawnText, new Vector2(hudArea.X + 5, yPos), Color.Orange);
+            
+            yPos += 20;
+            var timeText = $"{_simulation.RespawnTimeRemaining:F1}s";
+            spriteBatch.DrawString(_font, timeText, new Vector2(hudArea.X + 5, yPos), Color.Orange);
+        }
+    }
+
+    public void DrawRightHud(SpriteBatch spriteBatch, Rectangle hudArea, int screenWidth, int screenHeight)
+    {
+        if (_font == null || _pixelTexture == null) return;
+
+        var state = _simulation.State;
+
+        // Draw HUD background
+        DrawRectangle(spriteBatch, hudArea, new Color(0, 0, 0, 160));
+
+        var yPos = hudArea.Y + 10;
+
+        // Draw listening indicator
+        if (_voiceController.IsListening)
+        {
+            var listeningText = "LISTENING...";
+            spriteBatch.DrawString(_font, listeningText, new Vector2(hudArea.X + 5, yPos), Color.Yellow);
+
+            yPos += 30;
+            var hintText = "Say 'never mind' to abort";
+            spriteBatch.DrawString(_font, hintText, new Vector2(hudArea.X + 5, yPos), Color.LightGray);
+        }
+
+        // Draw last recognized command
+        if (!string.IsNullOrEmpty(_voiceController.LastRecognizedText))
+        {
+            yPos += 30;
+            var lastCmdText = $"Last:";
+            spriteBatch.DrawString(_font, lastCmdText, new Vector2(hudArea.X + 5, yPos), Color.LightGreen);
+
+            yPos += 20;
+            spriteBatch.DrawString(_font, _voiceController.LastRecognizedText, new Vector2(hudArea.X + 5, yPos), Color.LightGreen);
+        }
+
+        // Draw status message if available
+        if (!string.IsNullOrEmpty(_router.LastStatus))
+        {
+            yPos += 30;
+            var statusMsgText = _router.LastStatus;
+            var msgBackgroundRect = new Rectangle(hudArea.X + 2, (int)yPos - 2, hudArea.Width - 4, 20);
+            DrawRectangle(spriteBatch, msgBackgroundRect, new Color(0, 0, 100, 180));
+            spriteBatch.DrawString(_font, statusMsgText, new Vector2(hudArea.X + 5, yPos), Color.White);
+        }
+
+        // Draw command hints at bottom of right panel
+        yPos = hudArea.Bottom - 80;
+        if (state == Game.GameState.NotStarted)
+        {
+            var hintText = "Say 'begin game'";
+            spriteBatch.DrawString(_font, hintText, new Vector2(hudArea.X + 5, yPos), Color.Cyan);
+        }
+        else if (state == Game.GameState.Playing)
+        {
+            spriteBatch.DrawString(_font, "Commands:", new Vector2(hudArea.X + 5, yPos), Color.Gray);
+            yPos += 18;
+            spriteBatch.DrawString(_font, "north/south", new Vector2(hudArea.X + 5, yPos), Color.Gray);
+            yPos += 18;
+            spriteBatch.DrawString(_font, "west/east", new Vector2(hudArea.X + 5, yPos), Color.Gray);
+            yPos += 18;
+            spriteBatch.DrawString(_font, "pause/status", new Vector2(hudArea.X + 5, yPos), Color.Gray);
+        }
+        else if (state == Game.GameState.Paused)
+        {
+            var hintText = "Say 'resume'";
+            spriteBatch.DrawString(_font, hintText, new Vector2(hudArea.X + 5, yPos), Color.Cyan);
+        }
+        else if (state == Game.GameState.GameOver)
+        {
+            var hintText = "Say 'new game'";
+            spriteBatch.DrawString(_font, hintText, new Vector2(hudArea.X + 5, yPos), Color.Cyan);
+        }
+    }
+
     public void Draw(SpriteBatch spriteBatch, int screenWidth, int screenHeight)
     {
         Draw(spriteBatch, screenWidth, screenHeight, new Rectangle(0, 0, screenWidth, screenHeight));
@@ -209,7 +329,16 @@ public class HudOverlay
                 (screenWidth - commandsSize.X) / 2,
                 bannerY + 85);
             spriteBatch.DrawString(_font, commandsText, commandsPos, Color.Cyan);
-        }    }
+        }
+    }
+
+    public void DrawGameOverOverlay(SpriteBatch spriteBatch, int screenWidth, int screenHeight)
+    {
+        if (_simulation.State == Game.GameState.GameOver)
+        {
+            DrawGameOverBanner(spriteBatch, screenWidth, screenHeight);
+        }
+    }
 
     private void DrawRectangle(SpriteBatch spriteBatch, Rectangle rect, Color color)
     {

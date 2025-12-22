@@ -37,9 +37,10 @@ public class PacmanGame : Microsoft.Xna.Framework.Game
         Content.RootDirectory = "Content";
         IsMouseVisible = true;
 
-        // Set window size
-        _graphics.PreferredBackBufferWidth = 800;
-        _graphics.PreferredBackBufferHeight = 860;
+        // Set initial window size and allow resizing
+        _graphics.PreferredBackBufferWidth = 1670;
+        _graphics.PreferredBackBufferHeight = 1040;
+        Window.AllowUserResizing = true;
     }
 
     protected override void Initialize()
@@ -218,26 +219,46 @@ public class PacmanGame : Microsoft.Xna.Framework.Game
         }
         else if (_initialized && _gameRenderer != null && _hudOverlay != null)
         {
-            const int hudHeight = 140;
+            const int hudWidth = 200;
             const int borderThickness = 4;
+            const int padding = 20; // Account for window frame/chrome
 
             var screenWidth = _graphics.PreferredBackBufferWidth;
             var screenHeight = _graphics.PreferredBackBufferHeight;
-            var playfieldHeight = screenHeight - hudHeight - borderThickness;
+            
+            // Reduce drawable area to account for window frame at bottom
+            var drawableHeight = screenHeight - padding;
+            
+            var playfieldWidth = screenWidth - (hudWidth * 2) - (borderThickness * 2);
+            var playfieldX = hudWidth + borderThickness;
 
-            // Draw game
-            _gameRenderer.Draw(_spriteBatch, new Rectangle(0, 0, screenWidth, playfieldHeight));
+            // Draw left HUD
+            var leftHudArea = new Rectangle(0, 0, hudWidth, drawableHeight);
+            _hudOverlay.DrawLeftHud(_spriteBatch, leftHudArea, screenWidth, drawableHeight);
 
-            // Bottom border separating playfield from HUD
+            // Left border
             if (_pixelTexture != null)
             {
-                var borderRect = new Rectangle(0, playfieldHeight, screenWidth, borderThickness);
-                _spriteBatch.Draw(_pixelTexture, borderRect, Color.White);
+                var leftBorderRect = new Rectangle(hudWidth, 0, borderThickness, drawableHeight);
+                _spriteBatch.Draw(_pixelTexture, leftBorderRect, Color.White);
             }
 
-            // Draw HUD
-            var hudArea = new Rectangle(0, playfieldHeight + borderThickness, screenWidth, hudHeight);
-            _hudOverlay.Draw(_spriteBatch, screenWidth, screenHeight, hudArea);
+            // Draw game
+            _gameRenderer.Draw(_spriteBatch, new Rectangle(playfieldX, 0, playfieldWidth, drawableHeight));
+
+            // Right border
+            if (_pixelTexture != null)
+            {
+                var rightBorderRect = new Rectangle(playfieldX + playfieldWidth, 0, borderThickness, drawableHeight);
+                _spriteBatch.Draw(_pixelTexture, rightBorderRect, Color.White);
+            }
+
+            // Draw right HUD
+            var rightHudArea = new Rectangle(playfieldX + playfieldWidth + borderThickness, 0, hudWidth, drawableHeight);
+            _hudOverlay.DrawRightHud(_spriteBatch, rightHudArea, screenWidth, drawableHeight);
+
+            // Draw game over overlay on top if active
+            _hudOverlay.DrawGameOverOverlay(_spriteBatch, screenWidth, screenHeight);
         }
         else
         {

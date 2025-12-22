@@ -10,7 +10,9 @@ namespace PacmanVoice.UI;
 /// </summary>
 public class GameRenderer
 {
-    private const int CellSize = 20;
+    private const int MinimumCellSize = 10;
+    private const int DefaultCellSize = 20;
+    private int _cellSize = DefaultCellSize;
     private Texture2D? _pixelTexture;
     private readonly Game.GameSimulation _simulation;
     
@@ -102,14 +104,20 @@ public class GameRenderer
         if (_pixelTexture == null) return;
 
         var (gridWidth, gridHeight) = _simulation.GetGridSize();
+        
+        // Calculate cell size to fit the playfield area while maintaining aspect ratio
+        int cellSizeWidth = playfieldArea.Width / gridWidth;
+        int cellSizeHeight = playfieldArea.Height / gridHeight;
+        _cellSize = System.Math.Max(MinimumCellSize, System.Math.Min(cellSizeWidth, cellSizeHeight));
+
         var walls = _simulation.GetWalls();
         var pellets = _simulation.GetPellets();
         var ghosts = _simulation.GetGhosts();
         var fruitPos = _simulation.GetFruitPosition();
 
         // Center the grid inside the playfield (keeps HUD separate)
-        var offsetX = playfieldArea.X + (playfieldArea.Width - gridWidth * CellSize) / 2;
-        var offsetY = playfieldArea.Y + (playfieldArea.Height - gridHeight * CellSize) / 2;
+        var offsetX = playfieldArea.X + (playfieldArea.Width - gridWidth * _cellSize) / 2;
+        var offsetY = playfieldArea.Y + (playfieldArea.Height - gridHeight * _cellSize) / 2;
 
         // Draw walls
         for (int x = 0; x < gridWidth; x++)
@@ -118,7 +126,7 @@ public class GameRenderer
             {
                 if (walls[x, y])
                 {
-                    var rect = new Rectangle(offsetX + x * CellSize, offsetY + y * CellSize, CellSize, CellSize);
+                    var rect = new Rectangle(offsetX + x * _cellSize, offsetY + y * _cellSize, _cellSize, _cellSize);
                     spriteBatch.Draw(_pixelTexture, rect, Color.Blue);
                 }
             }
@@ -137,10 +145,10 @@ public class GameRenderer
                         continue;
                     }
 
-                    var pelletSize = 4;
+                    var pelletSize = System.Math.Max(2, _cellSize / 5);
                     var rect = new Rectangle(
-                        offsetX + x * CellSize + (CellSize - pelletSize) / 2,
-                        offsetY + y * CellSize + (CellSize - pelletSize) / 2,
+                        offsetX + x * _cellSize + (_cellSize - pelletSize) / 2,
+                        offsetY + y * _cellSize + (_cellSize - pelletSize) / 2,
                         pelletSize,
                         pelletSize
                     );
@@ -153,10 +161,10 @@ public class GameRenderer
         if (fruitPos.HasValue)
         {
             var fruitRect = new Rectangle(
-                offsetX + fruitPos.Value.X * CellSize,
-                offsetY + fruitPos.Value.Y * CellSize,
-                CellSize,
-                CellSize
+                offsetX + fruitPos.Value.X * _cellSize,
+                offsetY + fruitPos.Value.Y * _cellSize,
+                _cellSize,
+                _cellSize
             );
             
             // Draw fruit with a distinctive color or texture
@@ -177,10 +185,10 @@ public class GameRenderer
         foreach (var ghost in ghosts)
         {
             var ghostRect = new Rectangle(
-                offsetX + ghost.Position.X * CellSize,
-                offsetY + ghost.Position.Y * CellSize,
-                CellSize,
-                CellSize
+                offsetX + ghost.Position.X * _cellSize,
+                offsetY + ghost.Position.Y * _cellSize,
+                _cellSize,
+                _cellSize
             );
 
             // Determine flashing tint during power-up
@@ -213,10 +221,10 @@ public class GameRenderer
         // Draw Pacman with animated sprite or fallback to colored rectangle
         var pacmanPos = _simulation.PacmanPosition;
         var pacmanRect = new Rectangle(
-            offsetX + pacmanPos.X * CellSize,
-            offsetY + pacmanPos.Y * CellSize,
-            CellSize,
-            CellSize
+            offsetX + pacmanPos.X * _cellSize,
+            offsetY + pacmanPos.Y * _cellSize,
+            _cellSize,
+            _cellSize
         );
         
         // Get current animation frame and direction
@@ -244,10 +252,10 @@ public class GameRenderer
             
             // Draw a glow around Pacman
             var glowRect = new Rectangle(
-                offsetX + pacmanPos.X * CellSize - 2,
-                offsetY + pacmanPos.Y * CellSize - 2,
-                CellSize + 4,
-                CellSize + 4
+                offsetX + pacmanPos.X * _cellSize - 2,
+                offsetY + pacmanPos.Y * _cellSize - 2,
+                _cellSize + 4,
+                _cellSize + 4
             );
             spriteBatch.Draw(_pixelTexture, glowRect, glowColor);
         }
