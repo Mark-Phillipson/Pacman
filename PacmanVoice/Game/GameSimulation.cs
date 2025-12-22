@@ -14,6 +14,7 @@ public class GameSimulation
     private const double GhostSpeedMultiplierLevel2 = 0.85; // Ghosts move 15% faster on level 2
     private const double PowerUpDuration = 8.0; // Power-up lasts 8 seconds when fruit is eaten
     private const double RespawnDelay = 2.0; // Pause for 2 seconds after death before resuming
+    private const double GhostRetreatSpeedMultiplier = 1.6; // Ghosts move ~60% slower during power-up retreat
 
     // Classic-inspired: start on a safe corridor near the lower middle.
     private static readonly GridPosition PacmanStart = new(13, 23);
@@ -33,6 +34,7 @@ public class GameSimulation
     private Direction _nextDirection = Direction.None;
     private readonly Queue<Direction> _directionQueue = new();
     private double _moveTimer;
+    private double _ghostMoveTimer;
     private int _score;
     private int _lives = 3;
     private int _currentLevel = 1;
@@ -49,6 +51,7 @@ public class GameSimulation
     private GridPosition? _fruitPosition = null;
     private Random _fruitRandom = new();
     private const int FruitSpawnChance = 15; // Percentage chance to spawn fruit when eating a pellet
+    private GridPosition _penCenter;
     
     // Respawn system
     private bool _isRespawning = false;
@@ -204,6 +207,9 @@ public class GameSimulation
         _pacmanPos = PacmanStart;
         _pellets[_pacmanPos.X, _pacmanPos.Y] = false;
 
+        // Pen center used for ghost retreat behaviour
+        _penCenter = new GridPosition(cx, 15);
+
         // Count total pellets
         _totalPellets = 0;
         _pelletsEaten = 0;
@@ -326,6 +332,9 @@ public class GameSimulation
         _pacmanPos = PacmanStart;
         _pellets[_pacmanPos.X, _pacmanPos.Y] = false;
 
+        // Pen center used for ghost retreat behaviour (same pen location as level 1)
+        _penCenter = new GridPosition(cx, 15);
+
         // Count total pellets
         _totalPellets = 0;
         _pelletsEaten = 0;
@@ -378,6 +387,11 @@ public class GameSimulation
                 _isPowerUpActive = false;
                 _powerUpTimer = 0;
                 _ghostsEatenDuringPowerUp = 0;
+                // End retreat behaviour when power-up expires
+                foreach (var g in _ghosts)
+                {
+                    g.EndRetreatToPen();
+                }
                 PowerUpEnded?.Invoke();
             }
         }
@@ -388,7 +402,6 @@ public class GameSimulation
 
             RefreshDirections();
 
-            // Try to change direction at grid boundary
             if (_nextDirection != Direction.None && CanMove(_nextDirection))
             {
                 _currentDirection = _nextDirection;
@@ -420,7 +433,7 @@ public class GameSimulation
                         AdvanceLevel();
                     }
                 }
-                
+
                 // Check fruit collection
                 if (_fruitPosition.HasValue && _pacmanPos == _fruitPosition.Value)
                 {
@@ -428,6 +441,11 @@ public class GameSimulation
                     _isPowerUpActive = true;
                     _powerUpTimer = 0;
                     _ghostsEatenDuringPowerUp = 0;
+                    // Send ghosts retreating to pen while power-up is active
+                    foreach (var g in _ghosts)
+                    {
+                        g.BeginRetreatToPen(_penCenter);
+                    }
                     FruitEaten?.Invoke();
                     PowerUpActivated?.Invoke();
                 }
@@ -438,16 +456,23 @@ public class GameSimulation
                 }
             }
 
-            // Move ghosts
-            foreach (var ghost in _ghosts)
+            // Move ghosts on their own interval (slower during power-up)
+            _ghostMoveTimer += MoveInterval;
+            var ghostInterval = GetGhostMoveInterval();
+            if (_ghostMoveTimer >= ghostInterval)
             {
-                ghost.Update(_walls, GridWidth, GridHeight);
-            }
+                _ghostMoveTimer -= ghostInterval;
 
-            // Also check collision after ghosts move (otherwise a ghost moving onto Pac-Man is ignored)
-            if (TryHandlePacmanGhostCollision())
-            {
-                return;
+                foreach (var ghost in _ghosts)
+                {
+                    ghost.Update(_walls, GridWidth, GridHeight);
+                }
+
+                // Also check collision after ghosts move (otherwise a ghost moving onto Pac-Man is ignored)
+                if (TryHandlePacmanGhostCollision())
+                {
+                    return;
+                }
             }
         }
     }
@@ -545,6 +570,7 @@ public class GameSimulation
         foreach (var ghost in _ghosts)
         {
             ghost.ResetToStart();
+            ghost.EndRetreatToPen();
         }
     }
 
@@ -568,11 +594,16 @@ public class GameSimulation
 
     public double GetGhostMoveInterval()
     {
+        double interval = MoveInterval;
         if (_currentLevel == 2)
         {
-            return MoveInterval * GhostSpeedMultiplierLevel2;
+            interval *= GhostSpeedMultiplierLevel2; // slightly faster on level 2
         }
-        return MoveInterval;
+        if (_isPowerUpActive)
+        {
+            interval *= GhostRetreatSpeedMultiplier; // slow down during retreat
+        }
+        return interval;
     }
 
     public void SetDirection(Direction direction)
@@ -596,6 +627,7 @@ public class GameSimulation
         _nextDirection = Direction.None;
         _directionQueue.Clear();
         _moveTimer = 0;
+        _ghostMoveTimer = 0;
         _isRespawning = false;
         _respawnTimer = 0;
         LevelStart?.Invoke();
@@ -619,6 +651,7 @@ public class GameSimulation
         _lives = 3;
         _currentLevel = 1;
         _moveTimer = 0;
+        _ghostMoveTimer = 0;
         _currentDirection = Direction.None;
         _nextDirection = Direction.None;
         _directionQueue.Clear();
@@ -709,6 +742,10 @@ public class Ghost
     private readonly Direction _startDirection;
     private readonly int _level;
     private Random _random = new();
+    
+    // Retreat-to-pen behaviour
+    private bool _retreatToPen = false;
+    private GridPosition _penTarget;
 
     public GridPosition Position => _position;
     public int Level => _level;
@@ -731,12 +768,59 @@ public class Ghost
 
     public void Update(bool[,] walls, int gridWidth, int gridHeight)
     {
-        // Simple AI: try to continue in current direction, if blocked pick a random valid direction
+        // Retreat mode: head toward pen center and stop once inside the pen
+        if (_retreatToPen)
+        {
+            int cx = gridWidth / 2 - 1;
+            bool insidePen = (_position.X >= cx - 2 && _position.X <= cx + 2) && (_position.Y >= 14 && _position.Y <= 16);
+
+            if (insidePen)
+            {
+                _direction = Direction.None; // stay inside the pen
+                return;
+            }
+
+            // Choose the valid direction that minimizes Manhattan distance to the nearest door
+            var doorTop = new GridPosition(cx, 13);
+            var doorBottom = new GridPosition(cx, 17);
+            int distTop = Math.Abs(_position.X - doorTop.X) + Math.Abs(_position.Y - doorTop.Y);
+            int distBottom = Math.Abs(_position.X - doorBottom.X) + Math.Abs(_position.Y - doorBottom.Y);
+            var retreatTarget = distTop <= distBottom ? doorTop : doorBottom;
+            var bestDir = Direction.None;
+            int bestDist = int.MaxValue;
+            foreach (Direction dir in Enum.GetValues(typeof(Direction)))
+            {
+                if (dir == Direction.None) continue;
+                var testPos = GetNextPosition(_position, dir);
+                if (IsValidMove(testPos, walls, gridWidth, gridHeight))
+                {
+                    int dist = Math.Abs(testPos.X - retreatTarget.X) + Math.Abs(testPos.Y - retreatTarget.Y);
+                    if (dist < bestDist)
+                    {
+                        bestDist = dist;
+                        bestDir = dir;
+                    }
+                }
+            }
+
+            if (bestDir != Direction.None)
+            {
+                _direction = bestDir;
+                var nextPosRetreat = GetNextPosition(_position, _direction);
+                if (IsValidMove(nextPosRetreat, walls, gridWidth, gridHeight))
+                {
+                    _position = nextPosRetreat;
+                }
+                return;
+            }
+            // If no valid retreat move, fall through to default movement
+        }
+
+        // Default AI: continue if possible; otherwise pick a random valid direction
         var nextPos = GetNextPosition(_position, _direction);
 
-        if (!IsValidMove(nextPos, walls, gridWidth, gridHeight))
+        if (_direction == Direction.None || !IsValidMove(nextPos, walls, gridWidth, gridHeight))
         {
-            // Pick a random valid direction
             var validDirections = new List<Direction>();
             foreach (Direction dir in Enum.GetValues(typeof(Direction)))
             {
@@ -776,5 +860,16 @@ public class Ghost
     private bool IsValidMove(GridPosition pos, bool[,] walls, int gridWidth, int gridHeight)
     {
         return pos.X >= 0 && pos.X < gridWidth && pos.Y >= 0 && pos.Y < gridHeight && !walls[pos.X, pos.Y];
+    }
+
+    public void BeginRetreatToPen(GridPosition penCenter)
+    {
+        _retreatToPen = true;
+        _penTarget = penCenter;
+    }
+
+    public void EndRetreatToPen()
+    {
+        _retreatToPen = false;
     }
 }

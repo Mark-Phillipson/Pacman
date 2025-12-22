@@ -182,20 +182,31 @@ public class GameRenderer
                 CellSize,
                 CellSize
             );
-            
+
+            // Determine flashing tint during power-up
+            Color tint = Color.White;
+            if (_simulation.IsPowerUpActive)
+            {
+                var timeRemaining = _simulation.PowerUpTimeRemaining;
+                double flashRate = timeRemaining < 2.0 ? 0.1 : 0.2; // flash faster near expiry
+                bool flashOn = ((int)(_animationTimer / flashRate) % 2) == 0;
+                tint = flashOn ? Color.CornflowerBlue : Color.White;
+            }
+
             Texture2D? ghostTexture = GetGhostTexture(ghostIndex);
-            
+
             if (ghostTexture != null)
             {
-                spriteBatch.Draw(ghostTexture, ghostRect, Color.White);
+                spriteBatch.Draw(ghostTexture, ghostRect, tint);
             }
             else
             {
                 // Fallback to colored rectangles
-                var ghostColor = GetGhostColor(ghostIndex);
+                var baseColor = GetGhostColor(ghostIndex);
+                var ghostColor = _simulation.IsPowerUpActive ? (tint == Color.CornflowerBlue ? Color.CornflowerBlue : Color.White) : baseColor;
                 spriteBatch.Draw(_pixelTexture, ghostRect, ghostColor);
             }
-            
+
             ghostIndex++;
         }
 
