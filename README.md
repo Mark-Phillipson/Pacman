@@ -33,6 +33,22 @@ dotnet run
 
 On first run, Windows may prompt you to allow microphone access for speech recognition.
 
+## Running with PowerShell
+
+To run the Pac-Man Voice application using PowerShell, follow these steps:
+
+1. Open PowerShell.
+2. Navigate to the project directory:
+   ```powershell
+   cd PacmanVoice
+   ```
+3. Run the application:
+   ```powershell
+   dotnet run
+   ```
+
+On first run, Windows may prompt you to allow microphone access for speech recognition.
+
 ## Voice Commands
 
 ### Default Commands
@@ -162,3 +178,34 @@ This is a prototype implementation for educational purposes.
 - Sound effects (DEATH.WAV, EATFRUIT.WAV, etc. are included)
 - High score tracking
 - Multiple difficulty levels
+
+## Summary of Commands for Publishing and Releasing
+
+To publish and release the Pac-Man Voice application, you can use the following commands in sequence:
+
+```powershell
+# Navigate to the project directory
+cd PacmanVoice
+
+# Restore dependencies and build the project
+dotnet restore
+
+dotnet build
+
+# Publish the project as a standalone application
+dotnet publish -c Release -o publish --self-contained
+
+# Navigate to the publish directory
+cd publish
+
+# Zip the published directory
+Compress-Archive -Path * -DestinationPath ../PacmanVoice.zip
+
+# Go back to the project directory
+cd ..
+
+# Upload the release to GitHub using the command line
+gh release create v1.0.2 PacmanVoice.zip --title "Release v1.0.2" --notes "Initial release of Pac-Man Voice application"
+```
+
+Make sure you have the GitHub CLI installed and authenticated before running the last command.

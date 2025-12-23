@@ -1,0 +1,26 @@
+{
+  "defaultProfile": "default",
+  "profiles": {
+    "default": {
+      "compassDirections": {
+        "north": ["north"],
+        "south": ["south", "down"],
+        "west": ["west", "left"],
+        "east": ["east", "right"]
+      },
+      "commands": {
+        "beginGame": "begin game",
+        "pauseGame": "pause game",
+        "resumeGame": "resume game",
+        "restartGame": "restart game",
+        "gameStatus": "game status",
+        "repeatThat": "repeat that",
+        "quitGame": "quit game",
+        "quitConfirm": "quit confirm",
+        "neverMind": "never mind",
+        "startNewGame": "start new game",
+        "quitFromGameOver": "quit to desktop"
+      }
+    }
+  }
+}
