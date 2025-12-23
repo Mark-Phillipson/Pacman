@@ -14,6 +14,7 @@ public class CommandRouter
     private readonly Microsoft.Xna.Framework.Game _game;
     private string _lastStatus = string.Empty;
     private readonly Queue<CommandType> _queuedCommands = new();
+    private double _dispatchCooldownSeconds = 0;
 
     public string LastStatus => _lastStatus;
 
@@ -26,17 +27,24 @@ public class CommandRouter
     public void ClearQueuedCommands()
     {
         _queuedCommands.Clear();
+        _dispatchCooldownSeconds = 0;
     }
 
     /// <summary>
     /// Runs at most one queued command. Call once per frame/tick.
     /// </summary>
-    public void Update()
+    public void Update(double deltaSeconds)
     {
+        if (_dispatchCooldownSeconds > 0)
+        {
+            _dispatchCooldownSeconds -= deltaSeconds;
+        }
+
         if (_queuedCommands.Count == 0) return;
 
-        var next = _queuedCommands.Dequeue();
-        HandleCommandInternal(new RecognitionResult { Command = next, Commands = new List<CommandType> { next } });
+        if (_dispatchCooldownSeconds > 0) return;
+
+        DispatchNextQueuedCommand();
     }
 
     public void HandleCommand(RecognitionResult result)
@@ -49,10 +57,23 @@ public class CommandRouter
             {
                 _queuedCommands.Enqueue(cmd);
             }
+
+            // Dispatch the first one immediately, then throttle the rest to the move interval
+            // so they are applied one per grid step instead of all in the same frame.
+            DispatchNextQueuedCommand();
             return;
         }
 
         HandleCommandInternal(result);
+    }
+
+    private void DispatchNextQueuedCommand()
+    {
+        if (_queuedCommands.Count == 0) return;
+
+        var next = _queuedCommands.Dequeue();
+        _dispatchCooldownSeconds = _simulation.MoveIntervalSeconds;
+        HandleCommandInternal(new RecognitionResult { Command = next, Commands = new List<CommandType> { next } });
     }
 
     private void HandleCommandInternal(RecognitionResult result)

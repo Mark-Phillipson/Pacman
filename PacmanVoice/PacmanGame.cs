@@ -196,7 +196,7 @@ public class PacmanGame : Microsoft.Xna.Framework.Game
         if (_clock.IsRunning)
         {
             // Execute at most one queued voice command per frame
-            _commandRouter?.Update();
+            _commandRouter?.Update(deltaSeconds);
             _simulation.Update(deltaSeconds);
         }
 

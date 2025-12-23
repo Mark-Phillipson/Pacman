@@ -71,6 +71,7 @@ public class GameSimulation
     public int Score => _score;
     public int Lives => _lives;
     public int CurrentLevel => _currentLevel;
+    public double MoveIntervalSeconds => MoveInterval;
     public bool IsPowerUpActive => _isPowerUpActive;
     public double PowerUpTimeRemaining => _isPowerUpActive ? Math.Max(0, PowerUpDuration - _powerUpTimer) : 0;
     public GridPosition? FruitPosition => _fruitPosition;
