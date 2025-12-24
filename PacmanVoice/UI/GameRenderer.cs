@@ -167,16 +167,24 @@ public class GameRenderer
                 _cellSize
             );
             
+            // Get the fruit type based on the current level
+            string fruitType = _simulation.GetFruitType();
+            
             // Draw fruit with a distinctive color or texture
-            // Using cherry for now - can be any fruit texture
-            if (_fruitTextures.TryGetValue("cherry", out var fruitTexture) && fruitTexture != null)
+            if (_fruitTextures.TryGetValue(fruitType, out var fruitTexture) && fruitTexture != null)
             {
                 spriteBatch.Draw(fruitTexture, fruitRect, Color.White);
             }
             else
             {
-                // Fallback to red rectangle for fruit
-                spriteBatch.Draw(_pixelTexture, fruitRect, Color.Red);
+                // Fallback to colored rectangle based on fruit type
+                Color fruitColor = fruitType switch
+                {
+                    "banana" => Color.Yellow,
+                    "cherry" => Color.Red,
+                    _ => Color.Red
+                };
+                spriteBatch.Draw(_pixelTexture, fruitRect, fruitColor);
             }
         }
 

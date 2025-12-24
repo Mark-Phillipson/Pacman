@@ -70,6 +70,7 @@ public class PacmanGame : Microsoft.Xna.Framework.Game
             _simulation.LevelStart += () => _soundManager?.PlaySound("theme", 0.6f);
             _simulation.PowerUpActivated += () => _soundManager?.PlaySound("freeman", 1.0f);
             _simulation.FruitEaten += () => _soundManager?.PlaySound("eatfruit", 0.8f);
+            _simulation.ExtraLifeAwarded += () => _soundManager?.PlaySound("extralife", 1.0f);
             
             // Reset state when game restarts
             _simulation.OnRestartTriggered += () =>

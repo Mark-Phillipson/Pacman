@@ -56,7 +56,7 @@ public class GameSimulation
     private bool _isRespawning = false;
     private double _respawnTimer = 0;
     
-    // Extra life thresholds (awarded once each)
+    // Extra life thresholds
     private bool _lifeAwardedAt3000 = false;
     private bool _lifeAwardedAt5000 = false;
     private bool _lifeAwardedAt8000 = false;
@@ -68,8 +68,7 @@ public class GameSimulation
     public event Action? LevelCompleted;
     public event Action? PowerUpActivated;
     public event Action? PowerUpEnded;
-    public event Action? FruitEaten;
-    public event Action? ExtraLifeAwarded;
+    public event Action? FruitEaten;`n    public event Action? ExtraLifeAwarded;
 
     public GameState State => _state;
     public GridPosition PacmanPosition => _pacmanPos;
@@ -417,9 +416,26 @@ public class GameSimulation
                 if (_pellets[_pacmanPos.X, _pacmanPos.Y])
                 {
                     _pellets[_pacmanPos.X, _pacmanPos.Y] = false;
-                    AddScore(10);
+                    _score += 10;
                     _pelletsEaten++;
                     PelletEaten?.Invoke();
+
+                    // Award extra lives at specific score thresholds
+                    if (_score >= 3000 && !_lifeAwardedAt3000)
+                    {
+                        _lives++;
+                        _lifeAwardedAt3000 = true;`n                        ExtraLifeAwarded?.Invoke();`n                        ExtraLifeAwarded?.Invoke();
+                    }
+                    if (_score >= 5000 && !_lifeAwardedAt5000)
+                    {
+                        _lives++;
+                        _lifeAwardedAt5000 = true;`n                        ExtraLifeAwarded?.Invoke();`n                        ExtraLifeAwarded?.Invoke();
+                    }
+                    if (_score >= 8000 && !_lifeAwardedAt8000)
+                    {
+                        _lives++;
+                        _lifeAwardedAt8000 = true;`n                        ExtraLifeAwarded?.Invoke();`n                        ExtraLifeAwarded?.Invoke();
+                    }
 
                     // Chance to spawn fruit
                     if (_fruitPosition == null && _fruitRandom.Next(100) < FruitSpawnChance)
@@ -503,32 +519,6 @@ public class GameSimulation
         return false;
     }
     
-    private void AddScore(int points)
-    {
-        _score += points;
-
-        if (_score >= 3000 && !_lifeAwardedAt3000)
-        {
-            _lives++;
-            _lifeAwardedAt3000 = true;
-            ExtraLifeAwarded?.Invoke();
-        }
-
-        if (_score >= 5000 && !_lifeAwardedAt5000)
-        {
-            _lives++;
-            _lifeAwardedAt5000 = true;
-            ExtraLifeAwarded?.Invoke();
-        }
-
-        if (_score >= 8000 && !_lifeAwardedAt8000)
-        {
-            _lives++;
-            _lifeAwardedAt8000 = true;
-            ExtraLifeAwarded?.Invoke();
-        }
-    }
-
     private void EatGhost(Ghost ghost)
     {
         // Calculate bonus points: 200, 400, 800, 1600 for 1st through 4th ghost
@@ -536,7 +526,7 @@ public class GameSimulation
         int ghostIndex = Math.Min(_ghostsEatenDuringPowerUp, bonusPoints.Length - 1);
         int points = bonusPoints[ghostIndex];
         
-        AddScore(points);
+        _score += points;
         _ghostsEatenDuringPowerUp++;
         ghost.ResetToStart();
         GhostEaten?.Invoke();
@@ -617,7 +607,7 @@ public class GameSimulation
 
     public string GetFruitType()
     {
-        // Level 1 uses cherry; level 2+ uses banana
+        // Level 1: cherry, Level 2+: banana
         return _currentLevel == 1 ? "cherry" : "banana";
     }
 
@@ -894,3 +884,6 @@ public class Ghost
         _retreatToPen = false;
     }
 }
+
+
+

@@ -30,6 +30,7 @@ namespace PacmanVoice.UI
                 _soundEffects["eatghost"] = _contentManager.Load<SoundEffect>("Audio/EATGHOST");
                 _soundEffects["freeman"] = _contentManager.Load<SoundEffect>("Audio/FREEMAN");
                 _soundEffects["theme"] = _contentManager.Load<SoundEffect>("Audio/THEME");
+                           _soundEffects["extralife"] = _contentManager.Load<SoundEffect>("Audio/FREEMAN");
             }
             catch (System.Exception ex)
             {
