@@ -4,9 +4,9 @@
     "default": {
       "compassDirections": {
         "north": ["north"],
-        "south": ["south", "down"],
-        "west": ["west", "left"],
-        "east": ["east", "right"]
+        "south": ["south"],
+        "west": ["west"],
+        "east": ["east"]
       },
       "commands": {
         "beginGame": "begin game",
