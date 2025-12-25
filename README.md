@@ -9,6 +9,8 @@ A voice-controlled Pac-Man clone built with MonoGame and Windows System.Speech f
 - **No time penalty** - Timers and AI don't advance while frozen
 - **Customizable commands** - Configure voice phrases per user profile
 - **Quit safety** - Two-step quit confirmation to prevent accidental exits
+- **Score recording** - Saves timestamped scores with optional player name
+- **Tunable speed** - Off-pellet movement speed multiplier configurable
 
 ## Requirements
 
@@ -106,6 +108,39 @@ Edit `voice-commands.json` to customize voice phrases:
 
 You can create multiple profiles and switch between them by changing `defaultProfile`.
 
+## Configuration
+
+### Off‑Pellet Speed Multiplier
+
+Pac‑Man moves at normal speed when the next tile contains a pellet, and faster on empty tiles. You can tune the off‑pellet speed via an environment variable:
+
+- Variable: `PACMAN_OFFPELLET_MULT`
+- Meaning: Multiplier applied to the base move interval on empty tiles
+- Defaults to `0.8` (i.e., 25% faster than normal)
+- Allowed range: `0.1` (very fast) to `5.0` (very slow)
+
+Examples (PowerShell):
+
+```powershell
+# For the current PowerShell session
+$env:PACMAN_OFFPELLET_MULT = 0.8
+dotnet run --project .\PacmanVoice\PacmanVoice.csproj
+
+# Persist for future sessions
+setx PACMAN_OFFPELLET_MULT 0.8
+# Restart your shell/game to take effect
+```
+
+### Player Name for Score Recording (optional)
+
+You can provide a default name for recorded scores (Player One) using either an environment variable or a simple text file:
+
+- Environment variable (highest priority): `PACMAN_PLAYER1`
+- Text file in local app data: `%LOCALAPPDATA%\PacmanVoice\player1.txt`
+- Or next to the executable: `player1.txt`
+
+The file should contain just the name on the first line.
+
 ## Architecture
 
 The game is designed with a pluggable architecture to support multiple speech recognition engines:
@@ -139,6 +174,15 @@ When speech is detected:
 4. No game time accumulates during freeze → No time penalty
 
 The rendering loop continues running while frozen to keep the UI responsive.
+
+### Score Recording
+
+When the game enters the `GameOver` state, a score entry is appended to a CSV file:
+
+- Path: `%LOCALAPPDATA%\PacmanVoice\scores\scores.csv`
+- Columns: `timestamp,score,player`
+- Timestamp format: ISO‑8601 with timezone offset (e.g., `2025-12-25T13:45:02.123+01:00`)
+- Player name: taken from `PACMAN_PLAYER1`, `player1.txt` (local app data), or `player1.txt` next to the executable; left blank if none provided
 
 ### Recognition Flow
 

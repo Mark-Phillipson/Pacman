@@ -42,6 +42,7 @@ public class GameSimulation
     private bool[,] _pellets = new bool[GridWidth, GridHeight];
     private bool[,] _walls = new bool[GridWidth, GridHeight];
     private List<Ghost> _ghosts = new();
+    private double _offPelletSpeedMultiplier = 0.8; // 1.0 = normal, <1.0 faster, >1.0 slower
     
     // Power-up system fields
     private bool _isPowerUpActive = false;
@@ -84,6 +85,18 @@ public class GameSimulation
     public int GhostsEatenDuringPowerUp => _ghostsEatenDuringPowerUp;
     public bool IsRespawning => _isRespawning;
     public double RespawnTimeRemaining => _isRespawning ? Math.Max(0, RespawnDelay - _respawnTimer) : 0;
+    public double OffPelletSpeedMultiplier
+    {
+        get => _offPelletSpeedMultiplier;
+        set
+        {
+            var v = value;
+            if (double.IsNaN(v) || double.IsInfinity(v)) v = 1.0;
+            if (v < 0.1) v = 0.1; // prevent zero/negative or too fast
+            if (v > 5.0) v = 5.0; // prevent extreme slowness
+            _offPelletSpeedMultiplier = v;
+        }
+    }
 
     public GameSimulation()
     {
@@ -396,9 +409,11 @@ public class GameSimulation
             }
         }
 
-        if (_moveTimer >= MoveInterval)
+        // Determine the effective pacman move interval (slower when not eating a pellet)
+        var pacmanInterval = GetPacmanMoveInterval();
+        if (_moveTimer >= pacmanInterval)
         {
-            _moveTimer -= MoveInterval;
+            _moveTimer -= pacmanInterval;
 
             RefreshDirections();
 
@@ -457,7 +472,8 @@ public class GameSimulation
             }
 
             // Move ghosts on their own interval (slower during power-up)
-            _ghostMoveTimer += MoveInterval;
+            // Accumulate using the actual pacman interval elapsed for this tick
+            _ghostMoveTimer += pacmanInterval;
             var ghostInterval = GetGhostMoveInterval();
             if (_ghostMoveTimer >= ghostInterval)
             {
@@ -633,6 +649,30 @@ public class GameSimulation
             interval *= GhostRetreatSpeedMultiplier; // slow down during retreat
         }
         return interval;
+    }
+
+    private double GetPacmanMoveInterval()
+    {
+        // Predict the direction we will move next step
+        var dirToUse = Direction.None;
+        if (_nextDirection != Direction.None && CanMove(_nextDirection))
+        {
+            dirToUse = _nextDirection;
+        }
+        else if (_currentDirection != Direction.None && CanMove(_currentDirection))
+        {
+            dirToUse = _currentDirection;
+        }
+        else
+        {
+            // If we can't move, keep checks snappy
+            return MoveInterval * 0.5;
+        }
+
+        var nextPos = GetNextPosition(_pacmanPos, dirToUse);
+        bool willEatPellet = IsValidPosition(nextPos) && _pellets[nextPos.X, nextPos.Y];
+        // Keep current speed when eating; scale by OffPelletSpeedMultiplier on empty tiles
+        return willEatPellet ? MoveInterval : MoveInterval * _offPelletSpeedMultiplier;
     }
 
     public void SetDirection(Direction direction)

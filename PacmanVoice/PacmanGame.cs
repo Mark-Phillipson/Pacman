@@ -7,6 +7,7 @@ using PacmanVoice.Game;
 using PacmanVoice.UI;
 using System;
 using System.IO;
+using System.Globalization;
 
 namespace PacmanVoice;
 
@@ -30,6 +31,7 @@ public class PacmanGame : Microsoft.Xna.Framework.Game
 
     private bool _initialized = false;
     private string? _initError = null;
+    private Game.GameState _lastState = Game.GameState.NotStarted;
 
     public PacmanGame()
     {
@@ -58,6 +60,17 @@ public class PacmanGame : Microsoft.Xna.Framework.Game
             // Initialize core systems
             _clock = new SimulationClock();
             _simulation = new GameSimulation();
+            // Optional: tune off-pellet speed via environment variable PACMAN_OFFPELLET_MULT
+            try
+            {
+                var env = Environment.GetEnvironmentVariable("PACMAN_OFFPELLET_MULT");
+                if (!string.IsNullOrWhiteSpace(env) && double.TryParse(env, NumberStyles.Float, CultureInfo.InvariantCulture, out var mult))
+                {
+                    _simulation.OffPelletSpeedMultiplier = mult;
+                    Console.WriteLine($"Off-pellet speed multiplier set to {mult.ToString(CultureInfo.InvariantCulture)} via env.");
+                }
+            }
+            catch { }
             _commandRouter = new CommandRouter(_simulation, this);
 
             // Initialize sound manager
@@ -199,6 +212,21 @@ public class PacmanGame : Microsoft.Xna.Framework.Game
             // Execute at most one queued voice command per frame
             _commandRouter?.Update(deltaSeconds);
             _simulation.Update(deltaSeconds);
+        }
+
+        // On transition to GameOver, record the score with optional player name
+        if (_simulation != null)
+        {
+            var current = _simulation.State;
+            if (_lastState != Game.GameState.GameOver && current == Game.GameState.GameOver)
+            {
+                try
+                {
+                    ScoreRecorder.RecordScore(_simulation.Score);
+                }
+                catch { }
+            }
+            _lastState = current;
         }
 
         base.Update(gameTime);
