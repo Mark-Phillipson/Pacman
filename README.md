@@ -9,7 +9,7 @@ A voice-controlled Pac-Man clone built with MonoGame and Windows System.Speech f
 - **No time penalty** - Timers and AI don't advance while frozen
 - **Customizable commands** - Configure voice phrases per user profile
 - **Quit safety** - Two-step quit confirmation to prevent accidental exits
-- **Score recording** - Saves timestamped scores with optional player name
+- **Score recording** - Saves timestamped scores (player name defaults to `Player One`, can be overridden via environment variable or file)
 - **Tunable speed** - Off-pellet movement speed multiplier configurable
 
 ## Requirements
@@ -131,15 +131,9 @@ setx PACMAN_OFFPELLET_MULT 0.8
 # Restart your shell/game to take effect
 ```
 
-### Player Name for Score Recording (optional)
+### Player Name for Score Recording
 
-You can provide a default name for recorded scores (Player One) using either an environment variable or a simple text file:
-
-- Environment variable (highest priority): `PACMAN_PLAYER1`
-- Text file in local app data: `%LOCALAPPDATA%\PacmanVoice\player1.txt`
-- Or next to the executable: `player1.txt`
-
-The file should contain just the name on the first line.
+Player name used for recorded scores defaults to `Player One`. You can override it outside the game by setting the `PACMAN_PLAYER1` environment variable or by placing a `player1.txt` file (first line contains the name) in `%LOCALAPPDATA%\PacmanVoice` or next to the executable. Note: in‑game name editing has been removed; there is no UI to change the player name during gameplay.
 
 ## Architecture
 

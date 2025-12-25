@@ -1,6 +1,7 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using PacmanVoice.Voice;
+using System.Collections.Generic;
 
 namespace PacmanVoice.UI;
 
@@ -14,6 +15,9 @@ public class HudOverlay
     private readonly VoiceInputController _voiceController;
     private readonly Game.GameSimulation _simulation;
     private readonly Game.CommandRouter _router;
+    private List<ScoreRecorder.ScoreEntry> _topScores = new();
+    private string _playerName = "Player One";
+    private ScoreRecorder.ScoreEntry? _highlightScore;
 
     // Game over banner animation
     private double _gameOverBannerTimer = 0.0;
@@ -26,6 +30,22 @@ public class HudOverlay
         _simulation = simulation;
         _router = router;
     }
+
+    internal void SetTopScores(IEnumerable<ScoreRecorder.ScoreEntry> scores)
+    {
+        _topScores = new List<ScoreRecorder.ScoreEntry>(scores ?? new List<ScoreRecorder.ScoreEntry>());
+    }
+
+    internal void SetHighlightedScore(ScoreRecorder.ScoreEntry? score)
+    {
+        _highlightScore = score;
+    }
+
+        internal void SetPlayerName(string name)
+        {
+            _playerName = name;
+        }
+
 
     public void LoadContent(SpriteFont font)
     {
@@ -147,8 +167,7 @@ public class HudOverlay
         yPos = hudArea.Bottom - 80;
         if (state == Game.GameState.NotStarted)
         {
-            var hintText = "Say 'begin game'";
-            spriteBatch.DrawString(_font, hintText, new Vector2(hudArea.X + 5, yPos), Color.Cyan);
+            DrawTopScoresOverlay(spriteBatch, screenWidth, screenHeight, "Say 'begin game' to start");
         }
         else if (state == Game.GameState.Playing)
         {
@@ -287,6 +306,7 @@ public class HudOverlay
         }
         else if (state == Game.GameState.GameOver)
         {
+            DrawTopScoresOverlay(spriteBatch, screenWidth, screenHeight, "Say 'start new game' or 'quit to desktop'");
             DrawGameOverBanner(spriteBatch, screenWidth, screenHeight);
         }
     }
@@ -336,8 +356,64 @@ public class HudOverlay
     {
         if (_simulation.State == Game.GameState.GameOver)
         {
+            DrawTopScoresOverlay(spriteBatch, screenWidth, screenHeight, "Say 'start new game' or 'quit to desktop'");
             DrawGameOverBanner(spriteBatch, screenWidth, screenHeight);
         }
+    }
+
+    private void DrawTopScoresOverlay(SpriteBatch spriteBatch, int screenWidth, int screenHeight, string hintText)
+    {
+        if (_font == null || _pixelTexture == null) return;
+
+        // Semi-transparent backdrop covering screen
+        DrawRectangle(spriteBatch, new Rectangle(0, 0, screenWidth, screenHeight), new Color(0, 0, 0, 200));
+
+        var title = "Top Scores";
+        var titleSize = _font.MeasureString(title);
+        var titlePos = new Vector2((screenWidth - titleSize.X) / 2, 40);
+        spriteBatch.DrawString(_font, title, titlePos, Color.Yellow);
+
+        var playerLabel = $"Player: {_playerName}";
+        var playerSize = _font.MeasureString(playerLabel);
+        spriteBatch.DrawString(_font, playerLabel, new Vector2((screenWidth - playerSize.X) / 2, titlePos.Y + titleSize.Y + 5), Color.Cyan);
+
+        var y = titlePos.Y + titleSize.Y + playerSize.Y + 25;
+        var x = screenWidth / 2 - 260; // left align block near center
+
+        if (_topScores.Count == 0)
+        {
+            var msg = "No scores recorded yet";
+            var msgSize = _font.MeasureString(msg);
+            spriteBatch.DrawString(_font, msg, new Vector2((screenWidth - msgSize.X) / 2, y), Color.LightGray);
+            y += msgSize.Y + 20;
+        }
+        else
+        {
+            int rank = 1;
+            foreach (var s in _topScores)
+            {
+                if (rank > 20) break;
+                var name = string.IsNullOrWhiteSpace(s.Player) ? "(anon)" : s.Player;
+                var line = $"{rank,2}. {s.Score,6}  {name,-20}  {s.Timestamp:yyyy-MM-dd}";
+                var color = IsHighlighted(s) ? Color.Yellow : Color.White;
+                spriteBatch.DrawString(_font, line, new Vector2(x, y), color);
+                y += _font.LineSpacing + 2;
+                rank++;
+            }
+        }
+
+        var combinedHint = string.IsNullOrWhiteSpace(hintText) ? "" : hintText;
+        var hintSize = _font.MeasureString(combinedHint);
+        var hintPos = new Vector2((screenWidth - hintSize.X) / 2, screenHeight - 60);
+        spriteBatch.DrawString(_font, combinedHint, hintPos, Color.Cyan);
+    }
+
+    private bool IsHighlighted(ScoreRecorder.ScoreEntry entry)
+    {
+        if (_highlightScore == null) return false;
+        return entry.Score == _highlightScore.Score
+            && entry.Timestamp == _highlightScore.Timestamp
+            && string.Equals(entry.Player ?? string.Empty, _highlightScore.Player ?? string.Empty, System.StringComparison.Ordinal);
     }
 
     private void DrawRectangle(SpriteBatch spriteBatch, Rectangle rect, Color color)

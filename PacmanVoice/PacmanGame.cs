@@ -8,6 +8,7 @@ using PacmanVoice.UI;
 using System;
 using System.IO;
 using System.Globalization;
+using System.Collections.Generic;
 
 namespace PacmanVoice;
 
@@ -25,6 +26,10 @@ public class PacmanGame : Microsoft.Xna.Framework.Game
     private GameRenderer? _gameRenderer;
     private HudOverlay? _hudOverlay;
     private SoundEffectManager? _soundManager;
+
+    private List<ScoreRecorder.ScoreEntry> _topScores = new();
+    private const string DefaultPlayerName = "Player One";
+    private ScoreRecorder.ScoreEntry? _lastRecordedScore;
 
 
 
@@ -71,6 +76,8 @@ public class PacmanGame : Microsoft.Xna.Framework.Game
                 }
             }
             catch { }
+
+            ReloadTopScores();
             _commandRouter = new CommandRouter(_simulation, this);
 
             // Initialize sound manager
@@ -135,6 +142,8 @@ public class PacmanGame : Microsoft.Xna.Framework.Game
             // Initialize renderers
             _gameRenderer = new GameRenderer(_simulation);
             _hudOverlay = new HudOverlay(_voiceController, _simulation, _commandRouter);
+            _hudOverlay.SetTopScores(_topScores);
+            _hudOverlay.SetPlayerName(DefaultPlayerName);
 
             _initialized = true;
         }
@@ -196,6 +205,7 @@ public class PacmanGame : Microsoft.Xna.Framework.Game
         if (!_initialized || _clock == null || _simulation == null)
             return;
 
+
         // Update simulation clock
         var deltaSeconds = gameTime.ElapsedGameTime.TotalSeconds;
         _clock.Update(deltaSeconds);
@@ -222,12 +232,19 @@ public class PacmanGame : Microsoft.Xna.Framework.Game
             {
                 try
                 {
-                    ScoreRecorder.RecordScore(_simulation.Score);
+                    var ts = DateTimeOffset.Now;
+                    ScoreRecorder.RecordScore(_simulation.Score, DefaultPlayerName, ts);
+                    _lastRecordedScore = new ScoreRecorder.ScoreEntry { Score = _simulation.Score, Timestamp = ts, Player = DefaultPlayerName };
+                    ReloadTopScores();
+                    _hudOverlay?.SetTopScores(_topScores);
+                    _hudOverlay?.SetHighlightedScore(_lastRecordedScore);
                 }
                 catch { }
             }
             _lastState = current;
         }
+
+        // Removed unused _prevKeyboardState and keyboard references
 
         base.Update(gameTime);
     }
@@ -306,6 +323,20 @@ public class PacmanGame : Microsoft.Xna.Framework.Game
             spriteBatch.DrawString(_font, text, position, color);
         }
     }
+
+    private void ReloadTopScores()
+    {
+        try
+        {
+            _topScores = ScoreRecorder.LoadTopScores(20);
+            if (_hudOverlay != null)
+            {
+                _hudOverlay.SetTopScores(_topScores);
+            }
+        }
+        catch { }
+    }
+
 
     private void OnCommandRecognized(object? sender, RecognitionResult result)
     {
