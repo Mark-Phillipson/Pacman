@@ -59,6 +59,11 @@ public class CommandProfile
         if (Commands.TryGetValue("quitGame", out var quit)) map[quit] = CommandType.QuitGame;
         if (Commands.TryGetValue("quitConfirm", out var quitConfirm)) map[quitConfirm] = CommandType.QuitConfirm;
         if (Commands.TryGetValue("neverMind", out var neverMind)) map[neverMind] = CommandType.NeverMind;
+        if (Commands.TryGetValue("batchEntry", out var batchEntry)) map[batchEntry] = CommandType.BatchEntry;
+        if (Commands.TryGetValue("applyBatch", out var applyBatch)) map[applyBatch] = CommandType.ApplyBatch;
+        if (Commands.TryGetValue("speedUp", out var speedUp)) map[speedUp] = CommandType.SpeedUp;
+        if (Commands.TryGetValue("slowDown", out var slowDown)) map[slowDown] = CommandType.SlowDown;
+        if (Commands.TryGetValue("normalSpeed", out var normalSpeed)) map[normalSpeed] = CommandType.NormalSpeed;
         if (Commands.TryGetValue("startNewGame", out var startNew)) map[startNew] = CommandType.StartNewGame;
         if (Commands.TryGetValue("quitFromGameOver", out var quitGameOver)) map[quitGameOver] = CommandType.QuitFromGameOver;
 

@@ -171,13 +171,30 @@ public class HudOverlay
         }
         else if (state == Game.GameState.Playing)
         {
-            spriteBatch.DrawString(_font, "Commands:", new Vector2(hudArea.X + 5, yPos), Color.Gray);
+            // Comprehensive command list with arrow hints
+            spriteBatch.DrawString(_font, "Voice Commands:", new Vector2(hudArea.X + 5, yPos), Color.Gray);
+            yPos += 22;
+
+            // Direction arrows
+            spriteBatch.DrawString(_font, "↑ north    ↓ south", new Vector2(hudArea.X + 5, yPos), Color.LightGray);
             yPos += 18;
-            spriteBatch.DrawString(_font, "north/south", new Vector2(hudArea.X + 5, yPos), Color.Gray);
-            yPos += 18;
-            spriteBatch.DrawString(_font, "west/east", new Vector2(hudArea.X + 5, yPos), Color.Gray);
-            yPos += 18;
-            spriteBatch.DrawString(_font, "pause/status", new Vector2(hudArea.X + 5, yPos), Color.Gray);
+            spriteBatch.DrawString(_font, "← west     → east", new Vector2(hudArea.X + 5, yPos), Color.LightGray);
+            yPos += 26;
+
+            // Batch mode
+            spriteBatch.DrawString(_font, "batch entry | apply batch | never mind", new Vector2(hudArea.X + 5, yPos), new Color(180,180,180));
+            yPos += 22;
+
+            // Speed control
+            spriteBatch.DrawString(_font, "speed up | slow down | normal speed", new Vector2(hudArea.X + 5, yPos), new Color(180,180,180));
+            yPos += 22;
+
+            // Game control
+            spriteBatch.DrawString(_font, "begin game | pause game | resume game | restart game", new Vector2(hudArea.X + 5, yPos), new Color(160,160,160));
+            yPos += 22;
+
+            // Status and quit
+            spriteBatch.DrawString(_font, "game status | repeat that | quit game | quit confirm", new Vector2(hudArea.X + 5, yPos), new Color(160,160,160));
         }
         else if (state == Game.GameState.Paused)
         {

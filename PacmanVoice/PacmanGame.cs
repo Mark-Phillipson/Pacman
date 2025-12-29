@@ -195,125 +195,177 @@ public class PacmanGame : Microsoft.Xna.Framework.Game
 
     protected override void Update(GameTime gameTime)
     {
-        // Allow escape key for emergency exit
-        if (Keyboard.GetState().IsKeyDown(Keys.Escape))
+        try
         {
-            Exit();
-            return;
-        }
-
-        if (!_initialized || _clock == null || _simulation == null)
-            return;
-
-
-        // Update simulation clock
-        var deltaSeconds = gameTime.ElapsedGameTime.TotalSeconds;
-        _clock.Update(deltaSeconds);
-
-        // Update animation
-        _gameRenderer?.Update(deltaSeconds);
-
-        // Update HUD overlay (for game over banner animation)
-        _hudOverlay?.Update(deltaSeconds);
-
-        // Update simulation (only if clock is running)
-        if (_clock.IsRunning)
-        {
-            // Execute at most one queued voice command per frame
-            _commandRouter?.Update(deltaSeconds);
-            _simulation.Update(deltaSeconds);
-        }
-
-        // On transition to GameOver, record the score with optional player name
-        if (_simulation != null)
-        {
-            var current = _simulation.State;
-            if (_lastState != Game.GameState.GameOver && current == Game.GameState.GameOver)
+            // Allow escape key for emergency exit
+            if (Keyboard.GetState().IsKeyDown(Keys.Escape))
             {
-                try
-                {
-                    var ts = DateTimeOffset.Now;
-                    ScoreRecorder.RecordScore(_simulation.Score, DefaultPlayerName, ts);
-                    _lastRecordedScore = new ScoreRecorder.ScoreEntry { Score = _simulation.Score, Timestamp = ts, Player = DefaultPlayerName };
-                    ReloadTopScores();
-                    _hudOverlay?.SetTopScores(_topScores);
-                    _hudOverlay?.SetHighlightedScore(_lastRecordedScore);
-                }
-                catch { }
+                Exit();
+                return;
             }
-            _lastState = current;
+
+            if (!_initialized || _clock == null || _simulation == null)
+            {
+                Console.WriteLine($"[PacmanGame.Update] Not initialized: _initialized={_initialized}, _clock={_clock!=null}, _simulation={_simulation!=null}");
+                return;
+            }
+
+            // Log state changes
+            if (_simulation.State != _lastState)
+            {
+                Console.WriteLine($"[PacmanGame.Update] State changed: {_lastState} -> {_simulation.State}");
+            }
+
+            // Update simulation clock
+            var deltaSeconds = gameTime.ElapsedGameTime.TotalSeconds;
+            _clock.Update(deltaSeconds);
+
+            // Update animation
+            _gameRenderer?.Update(deltaSeconds);
+
+            // Update HUD overlay (for game over banner animation)
+            _hudOverlay?.Update(deltaSeconds);
+
+            // Update simulation (only if clock is running)
+            if (_clock.IsRunning)
+            {
+                // Execute at most one queued voice command per frame
+                _commandRouter?.Update(deltaSeconds);
+                _simulation.Update(deltaSeconds);
+            }
+
+            // On transition to GameOver, record the score with optional player name
+            if (_simulation != null)
+            {
+                var current = _simulation.State;
+                if (_lastState != Game.GameState.GameOver && current == Game.GameState.GameOver)
+                {
+                    try
+                    {
+                        var ts = DateTimeOffset.Now;
+                        ScoreRecorder.RecordScore(_simulation.Score, DefaultPlayerName, ts);
+                        _lastRecordedScore = new ScoreRecorder.ScoreEntry { Score = _simulation.Score, Timestamp = ts, Player = DefaultPlayerName };
+                        ReloadTopScores();
+                        _hudOverlay?.SetTopScores(_topScores);
+                        _hudOverlay?.SetHighlightedScore(_lastRecordedScore);
+                    }
+                    catch { }
+                }
+                _lastState = current;
+            }
+
+            base.Update(gameTime);
         }
-
-        // Removed unused _prevKeyboardState and keyboard references
-
-        base.Update(gameTime);
+        catch (Exception ex)
+        {
+            try { Logger.LogException("UpdateLoop", ex); } catch { }
+            // Swallow to keep the app running
+        }
     }
 
     protected override void Draw(GameTime gameTime)
     {
-        GraphicsDevice.Clear(Color.Black);
-
-        if (_spriteBatch == null)
-            return;
-
-        _spriteBatch.Begin();
-
-        if (_initError != null)
+        try
         {
-            // Draw error message
-            DrawText(_spriteBatch, _initError, new Vector2(10, 10), Color.Red);
-        }
-        else if (_initialized && _gameRenderer != null && _hudOverlay != null)
-        {
-            const int hudWidth = 200;
-            const int borderThickness = 4;
-            const int padding = 20; // Account for window frame/chrome
-
-            var screenWidth = _graphics.PreferredBackBufferWidth;
-            var screenHeight = _graphics.PreferredBackBufferHeight;
-            
-            // Reduce drawable area to account for window frame at bottom
-            var drawableHeight = screenHeight - padding;
-            
-            var playfieldWidth = screenWidth - (hudWidth * 2) - (borderThickness * 2);
-            var playfieldX = hudWidth + borderThickness;
-
-            // Draw left HUD
-            var leftHudArea = new Rectangle(0, 0, hudWidth, drawableHeight);
-            _hudOverlay.DrawLeftHud(_spriteBatch, leftHudArea, screenWidth, drawableHeight);
-
-            // Left border
-            if (_pixelTexture != null)
+            if (!_initialized)
             {
-                var leftBorderRect = new Rectangle(hudWidth, 0, borderThickness, drawableHeight);
-                _spriteBatch.Draw(_pixelTexture, leftBorderRect, Color.White);
+                Console.WriteLine($"[PacmanGame.Draw] Not initialized yet");
+            }
+            else if (_simulation != null)
+            {
+                Console.WriteLine($"[PacmanGame.Draw] Rendering state={_simulation.State}, _gameRenderer={_gameRenderer!=null}, _hudOverlay={_hudOverlay!=null}");
             }
 
-            // Draw game
-            _gameRenderer.Draw(_spriteBatch, new Rectangle(playfieldX, 0, playfieldWidth, drawableHeight));
+            GraphicsDevice.Clear(Color.Black);
 
-            // Right border
-            if (_pixelTexture != null)
+            if (_spriteBatch == null)
             {
-                var rightBorderRect = new Rectangle(playfieldX + playfieldWidth, 0, borderThickness, drawableHeight);
-                _spriteBatch.Draw(_pixelTexture, rightBorderRect, Color.White);
+                Console.WriteLine($"[PacmanGame.Draw] SpriteBatch is null");
+                return;
             }
 
-            // Draw right HUD
-            var rightHudArea = new Rectangle(playfieldX + playfieldWidth + borderThickness, 0, hudWidth, drawableHeight);
-            _hudOverlay.DrawRightHud(_spriteBatch, rightHudArea, screenWidth, drawableHeight);
+            try
+            {
+                _spriteBatch.Begin();
 
-            // Draw game over overlay on top if active
-            _hudOverlay.DrawGameOverOverlay(_spriteBatch, screenWidth, screenHeight);
+                if (_initError != null)
+                {
+                    // Draw error message
+                    DrawText(_spriteBatch, _initError, new Vector2(10, 10), Color.Red);
+                }
+                else if (_initialized && _gameRenderer != null && _hudOverlay != null)
+                {
+                    const int hudWidth = 200;
+                    const int borderThickness = 4;
+                    const int padding = 20; // Account for window frame/chrome
+
+                    var screenWidth = _graphics.PreferredBackBufferWidth;
+                    var screenHeight = _graphics.PreferredBackBufferHeight;
+                    
+                    // Reduce drawable area to account for window frame at bottom
+                    var drawableHeight = screenHeight - padding;
+                    
+                    var playfieldWidth = screenWidth - (hudWidth * 2) - (borderThickness * 2);
+                    var playfieldX = hudWidth + borderThickness;
+
+                    // Draw left HUD
+                    var leftHudArea = new Rectangle(0, 0, hudWidth, drawableHeight);
+                    _hudOverlay.DrawLeftHud(_spriteBatch, leftHudArea, screenWidth, drawableHeight);
+
+                    // Left border
+                    if (_pixelTexture != null)
+                    {
+                        var leftBorderRect = new Rectangle(hudWidth, 0, borderThickness, drawableHeight);
+                        _spriteBatch.Draw(_pixelTexture, leftBorderRect, Color.White);
+                    }
+
+                    // Draw game
+                    _gameRenderer.Draw(_spriteBatch, new Rectangle(playfieldX, 0, playfieldWidth, drawableHeight));
+
+                    // Right border
+                    if (_pixelTexture != null)
+                    {
+                        var rightBorderRect = new Rectangle(playfieldX + playfieldWidth, 0, borderThickness, drawableHeight);
+                        _spriteBatch.Draw(_pixelTexture, rightBorderRect, Color.White);
+                    }
+
+                    // Draw right HUD
+                    var rightHudArea = new Rectangle(playfieldX + playfieldWidth + borderThickness, 0, hudWidth, drawableHeight);
+                    _hudOverlay.DrawRightHud(_spriteBatch, rightHudArea, screenWidth, drawableHeight);
+
+                    // Draw game over overlay on top if active
+                    _hudOverlay.DrawGameOverOverlay(_spriteBatch, screenWidth, screenHeight);
+                }
+                else
+                {
+                    DrawText(_spriteBatch, "Initializing...", new Vector2(10, 10), Color.White);
+                }
+
+                _spriteBatch.End();
+            }
+            finally
+            {
+                // Ensure SpriteBatch is properly ended if an exception occurred during drawing
+                if (_spriteBatch != null)
+                {
+                    try
+                    {
+                        _spriteBatch.End();
+                    }
+                    catch
+                    {
+                        // If End() fails here, SpriteBatch was already ended above
+                    }
+                }
+            }
+
+            base.Draw(gameTime);
         }
-        else
+        catch (Exception ex)
         {
-            DrawText(_spriteBatch, "Initializing...", new Vector2(10, 10), Color.White);
+            try { Logger.LogException("DrawLoop", ex); } catch { }
+            // Swallow to keep the app running
         }
-
-        _spriteBatch.End();
-
-        base.Draw(gameTime);
     }
 
     private void DrawText(SpriteBatch spriteBatch, string text, Vector2 position, Color color)
@@ -340,9 +392,18 @@ public class PacmanGame : Microsoft.Xna.Framework.Game
 
     private void OnCommandRecognized(object? sender, RecognitionResult result)
     {
-        if (_commandRouter != null)
+        try
         {
-            _commandRouter.HandleCommand(result);
+            if (_commandRouter != null)
+            {
+                _commandRouter.HandleCommand(result);
+            }
+        }
+        catch (System.Exception ex)
+        {
+            // Prevent app shutdown on command handling errors
+            try { Logger.LogException("CommandHandlingError", ex); } catch { }
+            // Swallow the exception so the game continues running
         }
     }
 

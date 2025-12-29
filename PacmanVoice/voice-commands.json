@@ -18,6 +18,11 @@
         "quitGame": "quit game",
         "quitConfirm": "quit confirm",
         "neverMind": "never mind",
+        "batchEntry": "batch entry",
+        "applyBatch": "apply batch",
+        "speedUp": "speed up",
+        "slowDown": "slow down",
+        "normalSpeed": "normal speed",
         "startNewGame": "start new game",
         "quitFromGameOver": "quit to desktop"
       }

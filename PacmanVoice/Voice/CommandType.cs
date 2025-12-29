@@ -24,6 +24,15 @@ public enum CommandType
     QuitConfirm,
     NeverMind,
 
+    // Batch entry mode
+    BatchEntry,
+    ApplyBatch,
+
+    // Game speed control
+    SpeedUp,
+    SlowDown,
+    NormalSpeed,
+
     // Game over commands
     StartNewGame,
     QuitFromGameOver,

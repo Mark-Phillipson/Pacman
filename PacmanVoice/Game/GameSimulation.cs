@@ -62,6 +62,13 @@ public class GameSimulation
     private bool _lifeAwardedAt5000 = false;
     private bool _lifeAwardedAt8000 = false;
 
+    // Batch mode for queuing multiple direction commands
+    private List<Direction> _batchDirections = new();
+    private bool _isBatchMode = false;
+
+    // Game speed control
+    private double _gameSpeedMultiplier = 1.0;
+
     public event Action? PlayerDied;
     public event Action? PelletEaten;
     public event Action? GhostEaten;
@@ -95,6 +102,27 @@ public class GameSimulation
             if (v < 0.1) v = 0.1; // prevent zero/negative or too fast
             if (v > 5.0) v = 5.0; // prevent extreme slowness
             _offPelletSpeedMultiplier = v;
+        }
+    }
+
+    // Expose whether a direction change request is currently pending
+    public bool HasPendingDirectionRequest => _nextDirection != Direction.None;
+
+    // Expose whether turning/moving into the given direction is possible now
+    public bool CanAcceptDirection(Direction direction) => CanMove(direction);
+
+    public bool IsBatchMode => _isBatchMode;
+    public List<Direction> BatchDirections => _batchDirections;
+    public double GameSpeedMultiplier
+    {
+        get => _gameSpeedMultiplier;
+        set
+        {
+            var v = value;
+            if (double.IsNaN(v) || double.IsInfinity(v)) v = 1.0;
+            if (v < 0.1) v = 0.1; // prevent zero/negative or too fast
+            if (v > 3.0) v = 3.0; // prevent extreme slowness
+            _gameSpeedMultiplier = v;
         }
     }
 
@@ -648,6 +676,8 @@ public class GameSimulation
         {
             interval *= GhostRetreatSpeedMultiplier; // slow down during retreat
         }
+        // Apply game speed multiplier
+        interval /= _gameSpeedMultiplier; // faster multiplier means smaller interval
         return interval;
     }
 
@@ -666,13 +696,15 @@ public class GameSimulation
         else
         {
             // If we can't move, keep checks snappy
-            return MoveInterval * 0.5;
+            return MoveInterval * 0.5 / _gameSpeedMultiplier;
         }
 
         var nextPos = GetNextPosition(_pacmanPos, dirToUse);
         bool willEatPellet = IsValidPosition(nextPos) && _pellets[nextPos.X, nextPos.Y];
         // Keep current speed when eating; scale by OffPelletSpeedMultiplier on empty tiles
-        return willEatPellet ? MoveInterval : MoveInterval * _offPelletSpeedMultiplier;
+        // Apply game speed multiplier
+        var interval = willEatPellet ? MoveInterval : MoveInterval * _offPelletSpeedMultiplier;
+        return interval / _gameSpeedMultiplier; // faster multiplier means smaller interval
     }
 
     public void SetDirection(Direction direction)
@@ -684,6 +716,7 @@ public class GameSimulation
 
     public void Begin()
     {
+        Console.WriteLine($"[GameSimulation.Begin] Transitioning to Playing state");
         _state = GameState.Playing;
         _currentDirection = Direction.None;
         _nextDirection = Direction.None;
@@ -691,7 +724,9 @@ public class GameSimulation
         _ghostMoveTimer = 0;
         _isRespawning = false;
         _respawnTimer = 0;
+        Console.WriteLine($"[GameSimulation.Begin] Invoking LevelStart event");
         LevelStart?.Invoke();
+        Console.WriteLine($"[GameSimulation.Begin] Begin complete, state={_state}");
     }
 
     public void Pause()
@@ -704,6 +739,46 @@ public class GameSimulation
     {
         if (_state == GameState.Paused)
             _state = GameState.Playing;
+    }
+
+    public void EnterBatchMode()
+    {
+        if (_state == GameState.Playing)
+        {
+            _state = GameState.BatchMode;
+            _batchDirections.Clear();
+        }
+    }
+
+    public void AddBatchDirection(Direction direction)
+    {
+        if (_state == GameState.BatchMode && direction != Direction.None)
+        {
+            _batchDirections.Add(direction);
+        }
+    }
+
+    public void ApplyBatch()
+    {
+        if (_state == GameState.BatchMode && _batchDirections.Count > 0)
+        {
+            _state = GameState.Playing;
+            // The CommandRouter will handle queuing these directions
+        }
+    }
+
+    public void ExitBatchMode()
+    {
+        if (_state == GameState.BatchMode)
+        {
+            _state = GameState.Playing;
+            _batchDirections.Clear();
+        }
+    }
+
+    public void SetGameSpeed(double multiplier)
+    {
+        GameSpeedMultiplier = multiplier;
     }
 
     public void Restart()

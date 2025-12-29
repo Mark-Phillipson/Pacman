@@ -10,6 +10,7 @@ public enum GameState
     NotStarted,
     Playing,
     Paused,
+    BatchMode,
     QuitConfirmation,
     GameOver
 }
