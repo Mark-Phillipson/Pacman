@@ -11,10 +11,13 @@ public class GameSimulation
     private const int GridWidth = 28;
     private const int GridHeight = 31;
     private const double MoveInterval = 0.15; // seconds per grid cell
+    private const double GhostSlowMultiplier = 1.25; // Ghosts move 25% slower on all levels
     private const double GhostSpeedMultiplierLevel2 = 0.85; // Ghosts move 15% faster on level 2
     private const double PowerUpDuration = 8.0; // Power-up lasts 8 seconds when fruit is eaten
     private const double RespawnDelay = 2.0; // Pause for 2 seconds after death before resuming
     private const double GhostRetreatSpeedMultiplier = 1.6; // Ghosts move ~60% slower during power-up retreat
+    private const double GhostLockInPenDuration = 10.0; // Ghosts locked in pen for 10 seconds at game start
+    private const double GhostLockAfterDeathDuration = 5.0; // Ghosts locked in pen for 5 seconds after player death
 
     // Classic-inspired: start on a safe corridor near the lower middle.
     private static readonly GridPosition PacmanStart = new(13, 23);
@@ -57,6 +60,10 @@ public class GameSimulation
     private bool _isRespawning = false;
     private double _respawnTimer = 0;
     
+    // Ghost lock in pen system
+    private bool _ghostsLockedInPen = false;
+    private double _ghostLockTimer = 0;
+    
     // Extra life thresholds (awarded once each)
     private bool _lifeAwardedAt3000 = false;
     private bool _lifeAwardedAt5000 = false;
@@ -92,6 +99,8 @@ public class GameSimulation
     public int GhostsEatenDuringPowerUp => _ghostsEatenDuringPowerUp;
     public bool IsRespawning => _isRespawning;
     public double RespawnTimeRemaining => _isRespawning ? Math.Max(0, RespawnDelay - _respawnTimer) : 0;
+    public bool AreGhostsLockedInPen => _ghostsLockedInPen;
+    public double GhostLockTimeRemaining => _ghostsLockedInPen ? Math.Max(0, GhostLockInPenDuration - _ghostLockTimer) : 0;
     public double OffPelletSpeedMultiplier
     {
         get => _offPelletSpeedMultiplier;
@@ -417,6 +426,26 @@ public class GameSimulation
             return; // Don't process game logic during respawn
         }
 
+        // Handle ghost lock in pen timer (10 second head start or 5 second death penalty)
+        if (_ghostsLockedInPen)
+        {
+            _ghostLockTimer += deltaSeconds;
+            
+            // Determine which duration to use based on game state
+            double lockDuration = _isRespawning ? GhostLockAfterDeathDuration : GhostLockInPenDuration;
+            
+            if (_ghostLockTimer >= lockDuration)
+            {
+                _ghostsLockedInPen = false;
+                _ghostLockTimer = 0;
+                // Release ghosts from pen
+                foreach (var g in _ghosts)
+                {
+                    g.ReleaseFromPen();
+                }
+            }
+        }
+
         _moveTimer += deltaSeconds;
         
         // Update power-up timer
@@ -500,22 +529,26 @@ public class GameSimulation
             }
 
             // Move ghosts on their own interval (slower during power-up)
-            // Accumulate using the actual pacman interval elapsed for this tick
-            _ghostMoveTimer += pacmanInterval;
-            var ghostInterval = GetGhostMoveInterval();
-            if (_ghostMoveTimer >= ghostInterval)
+            // Don't move ghosts if they're locked in the pen
+            if (!_ghostsLockedInPen)
             {
-                _ghostMoveTimer -= ghostInterval;
-
-                foreach (var ghost in _ghosts)
+                // Accumulate using the actual pacman interval elapsed for this tick
+                _ghostMoveTimer += pacmanInterval;
+                var ghostInterval = GetGhostMoveInterval();
+                if (_ghostMoveTimer >= ghostInterval)
                 {
-                    ghost.Update(_walls, GridWidth, GridHeight);
-                }
+                    _ghostMoveTimer -= ghostInterval;
 
-                // Also check collision after ghosts move (otherwise a ghost moving onto Pac-Man is ignored)
-                if (TryHandlePacmanGhostCollision())
-                {
-                    return;
+                    foreach (var ghost in _ghosts)
+                    {
+                        ghost.Update(_walls, GridWidth, GridHeight);
+                    }
+
+                    // Also check collision after ghosts move (otherwise a ghost moving onto Pac-Man is ignored)
+                    if (TryHandlePacmanGhostCollision())
+                    {
+                        return;
+                    }
                 }
             }
         }
@@ -640,6 +673,10 @@ public class GameSimulation
             ghost.ResetToStart();
             ghost.EndRetreatToPen();
         }
+
+        // Lock ghosts in pen for 5 seconds as a mercy period after death
+        _ghostsLockedInPen = true;
+        _ghostLockTimer = 0;
     }
 
     private void AdvanceLevel()
@@ -667,7 +704,7 @@ public class GameSimulation
 
     public double GetGhostMoveInterval()
     {
-        double interval = MoveInterval;
+        double interval = MoveInterval * GhostSlowMultiplier; // Apply slowdown to all levels
         if (_currentLevel == 2)
         {
             interval *= GhostSpeedMultiplierLevel2; // slightly faster on level 2
@@ -724,6 +761,8 @@ public class GameSimulation
         _ghostMoveTimer = 0;
         _isRespawning = false;
         _respawnTimer = 0;
+        _ghostsLockedInPen = true;
+        _ghostLockTimer = 0;
         Console.WriteLine($"[GameSimulation.Begin] Invoking LevelStart event");
         LevelStart?.Invoke();
         Console.WriteLine($"[GameSimulation.Begin] Begin complete, state={_state}");
@@ -796,6 +835,8 @@ public class GameSimulation
         _fruitPosition = null;
         _isRespawning = false;
         _respawnTimer = 0;
+        _ghostsLockedInPen = true;
+        _ghostLockTimer = 0;
         _lifeAwardedAt3000 = false;
         _lifeAwardedAt5000 = false;
         _lifeAwardedAt8000 = false;
@@ -875,6 +916,9 @@ public class Ghost
     // Retreat-to-pen behaviour
     private bool _retreatToPen = false;
     private GridPosition _penTarget;
+    
+    // Lock in pen behaviour
+    private bool _lockedInPen = false;
 
     public GridPosition Position => _position;
     public int Level => _level;
@@ -897,6 +941,20 @@ public class Ghost
 
     public void Update(bool[,] walls, int gridWidth, int gridHeight)
     {
+        // Lock in pen mode: stay inside the pen and don't move
+        if (_lockedInPen)
+        {
+            int cx = gridWidth / 2 - 1;
+            bool insidePen = (_position.X >= cx - 2 && _position.X <= cx + 2) && (_position.Y >= 14 && _position.Y <= 16);
+
+            if (insidePen)
+            {
+                _direction = Direction.None; // stay inside the pen
+                return;
+            }
+            // If somehow not in pen, move toward pen center
+        }
+
         // Retreat mode: head toward pen center and stop once inside the pen
         if (_retreatToPen)
         {
@@ -1003,6 +1061,12 @@ public class Ghost
     {
         _retreatToPen = false;
         // Reset direction so ghost picks a new one when resuming roaming
+        _direction = Direction.None;
+    }
+
+    public void ReleaseFromPen()
+    {
+        _lockedInPen = false;
         _direction = Direction.None;
     }
 }

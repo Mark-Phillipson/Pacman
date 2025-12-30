@@ -107,6 +107,18 @@ public class HudOverlay
             spriteBatch.DrawString(_font, timeText, new Vector2(hudArea.X + 5, yPos), powerUpColor);
         }
 
+        // Draw ghost lock timer if ghosts are locked in pen
+        if (_simulation.AreGhostsLockedInPen)
+        {
+            yPos += 30;
+            var lockText = $"GHOSTS LOCKED";
+            spriteBatch.DrawString(_font, lockText, new Vector2(hudArea.X + 5, yPos), Color.Magenta);
+            
+            yPos += 20;
+            var lockTimeText = $"{_simulation.GhostLockTimeRemaining:F1}s";
+            spriteBatch.DrawString(_font, lockTimeText, new Vector2(hudArea.X + 5, yPos), Color.Magenta);
+        }
+
         // Draw respawn countdown if respawning
         if (_simulation.IsRespawning)
         {
