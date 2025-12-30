@@ -871,8 +871,6 @@ public class Ghost
     private readonly Direction _startDirection;
     private readonly int _level;
     private static readonly Random s_random = new();
-    private int _moveCountInDirection = 0;
-    private const int MovesPerDirection = 5; // Persist in a direction for 5 moves
     
     // Retreat-to-pen behaviour
     private bool _retreatToPen = false;
@@ -895,7 +893,6 @@ public class Ghost
     {
         _position = _startPosition;
         _direction = _startDirection;
-        _moveCountInDirection = 0;
     }
 
     public void Update(bool[,] walls, int gridWidth, int gridHeight)
@@ -948,13 +945,12 @@ public class Ghost
             // If no valid retreat move, fall through to default movement
         }
 
-        // Random roaming AI: try to continue in current direction; pick a new random direction every N moves
+        // Ghosts stick to their chosen direction until hitting a wall
         var nextPos = GetNextPosition(_position, _direction);
 
-        // Pick a new direction if we hit a wall, are starting out, or have done N moves in current direction
-        if (_direction == Direction.None || !IsValidMove(nextPos, walls, gridWidth, gridHeight) || _moveCountInDirection >= MovesPerDirection)
+        // Pick a new direction only if we hit a wall or are starting out (no direction yet)
+        if (_direction == Direction.None || !IsValidMove(nextPos, walls, gridWidth, gridHeight))
         {
-            _moveCountInDirection = 0;
             var validDirections = new List<Direction>();
             foreach (Direction dir in Enum.GetValues(typeof(Direction)))
             {
@@ -977,7 +973,6 @@ public class Ghost
         if (IsValidMove(nextPos, walls, gridWidth, gridHeight))
         {
             _position = nextPos;
-            _moveCountInDirection++;
         }
     }
 
@@ -1007,5 +1002,7 @@ public class Ghost
     public void EndRetreatToPen()
     {
         _retreatToPen = false;
+        // Reset direction so ghost picks a new one when resuming roaming
+        _direction = Direction.None;
     }
 }
