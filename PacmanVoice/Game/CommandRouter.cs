@@ -54,18 +54,6 @@ public class CommandRouter
 
     public void HandleCommand(RecognitionResult result)
     {
-        // If multiple commands were recognized (typically a direction sequence), queue them.
-        if (result.Commands is { Count: > 1 })
-        {
-            Console.WriteLine($"Queuing {result.Commands.Count} direction commands");
-            foreach (var cmd in result.Commands)
-            {
-                _queuedCommands.Enqueue(cmd);
-            }
-            // Do not dispatch immediately; Update() will apply each when the turn is possible
-            return;
-        }
-
         HandleCommandInternal(result);
     }
 

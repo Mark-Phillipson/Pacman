@@ -115,33 +115,15 @@ public class SystemSpeechRecognizer : IRecognizer, IDisposable
                 _recognizer.LoadGrammar(cmdGrammar);
             }
 
-            // Grammar 2: Direction sequences without connectors (e.g., "up left down")
+            // Grammar 2: Single direction commands only (no sequences)
             if (directionPhrases.Length > 0)
             {
                 var dirChoices = new Choices(directionPhrases);
-                var seqNoConnector = new GrammarBuilder();
-                seqNoConnector.Append(dirChoices, 1, MaxDirectionSequenceLength);
-                var dirSeqGrammar = new Grammar(seqNoConnector)
+                var dirGrammar = new Grammar(new GrammarBuilder(dirChoices))
                 {
-                    Name = "DirectionSequence"
+                    Name = "DirectionCommands"
                 };
-                _recognizer.LoadGrammar(dirSeqGrammar);
-
-                // Grammar 3: Direction sequences with connectors (e.g., "up and left then down")
-                var connectorChoices = new Choices(DirectionConnectors);
-                var seqWithConnectors = new GrammarBuilder();
-                seqWithConnectors.Append(dirChoices);
-
-                var tail = new GrammarBuilder();
-                tail.Append(connectorChoices);
-                tail.Append(dirChoices);
-                seqWithConnectors.Append(tail, 0, MaxDirectionSequenceLength - 1);
-
-                var dirSeqWithConnectorsGrammar = new Grammar(seqWithConnectors)
-                {
-                    Name = "DirectionSequenceWithConnectors"
-                };
-                _recognizer.LoadGrammar(dirSeqWithConnectorsGrammar);
+                _recognizer.LoadGrammar(dirGrammar);
             }
         }
         catch (Exception ex)
