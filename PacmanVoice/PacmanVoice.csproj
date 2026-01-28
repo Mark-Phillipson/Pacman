@@ -1,17 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFrameworks>net10.0;net10.0-android</TargetFrameworks>
+    <!-- TEMPORARY WORKAROUND: Target net8.0 (desktop) locally; android target excluded to avoid android workload errors locally -->
+    <TargetFramework>net8.0</TargetFramework>
     <RollForward>Major</RollForward>
     <PublishReadyToRun>false</PublishReadyToRun>
     <TieredCompilation>false</TieredCompilation>
     <Nullable>enable</Nullable>
     <!-- RuntimeFrameworkVersion removed to allow SDK to pick installed runtime pack -->
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(TargetFramework)'=='net10.0-android'">
-    <!-- Minimum Android API level (26 = Android 8.0) -->
-    <AndroidMinSdkVersion>26</AndroidMinSdkVersion>
   </PropertyGroup>
   <PropertyGroup>
     <ApplicationManifest>app.manifest</ApplicationManifest>
@@ -29,7 +25,7 @@
       <LogicalName>Icon.bmp</LogicalName>
     </EmbeddedResource>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)'=='net10.0'">
+  <ItemGroup Condition="'$(TargetFramework)'=='net8.0'">
     <PackageReference Include="MonoGame.Framework.DesktopGL" Version="3.8.*" />
     <PackageReference Include="MonoGame.Content.Builder.Task" Version="3.8.*" />
     <PackageReference Include="System.Speech" Version="8.0.0" />
@@ -37,7 +33,7 @@
     <PackageReference Include="Microsoft.CognitiveServices.Speech" Version="1.27.*" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFramework)'=='net10.0-android'">
+  <ItemGroup Condition="'$(TargetFramework)'=='net8.0-android'">
     <PackageReference Include="MonoGame.Framework.Android" Version="3.8.*" />
     <!-- Vosk native bindings for speech recognition (add specific version as required) -->
     <PackageReference Include="Vosk" Version="0.3.*" />

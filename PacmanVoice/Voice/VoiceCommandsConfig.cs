@@ -138,13 +138,24 @@ public static class VoiceConfigLoader
             return DeserializeAndValidate(json);
         }
 
-        // When running from a packaged build (e.g., Android), try TitleContainer.OpenStream
+        // When running from a packaged build (e.g., Android), try TitleContainer.OpenStream via reflection
         try
         {
-            using var stream = TitleContainer.OpenStream(configPath);
-            using var reader = new StreamReader(stream);
-            var json = reader.ReadToEnd();
-            return DeserializeAndValidate(json);
+            // Use reflection so this compiles even when MonoGame isn't referenced in the current target/framework
+            var titleContainerType = Type.GetType("Microsoft.Xna.Framework.TitleContainer, MonoGame.Framework");
+            if (titleContainerType != null)
+            {
+                var method = titleContainerType.GetMethod("OpenStream", new[] { typeof(string) });
+                if (method != null)
+                {
+                    using var stream = (Stream)method.Invoke(null, new object[] { configPath });
+                    using var reader = new StreamReader(stream);
+                    var json = reader.ReadToEnd();
+                    return DeserializeAndValidate(json);
+                }
+            }
+
+            throw new FileNotFoundException($"Configuration file not found: {configPath} (tried disk and TitleContainer)");
         }
         catch (Exception ex)
         {

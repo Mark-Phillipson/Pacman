@@ -29,14 +29,14 @@ namespace PacmanVoice.Tests
         {
             // Ensure a minimal voice-commands.json exists in the test output directory so Initialize can proceed
             var configPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "voice-commands.json");
-            var minimal = @"{\n  \"defaultProfile\": \"default\",\n  \"profiles\": { \"default\": { \"directions\": { \"up\": \"up\", \"down\": \"down\", \"left\": \"left\", \"right\": \"right\" }, \"commands\": { \"beginGame\": \"begin game\" } } } }";
+            var minimal = "{ \"defaultProfile\": \"default\", \"profiles\": { \"default\": { \"directions\": { \"up\": \"up\", \"down\": \"down\", \"left\": \"left\", \"right\": \"right\" }, \"commands\": { \"beginGame\": \"begin game\" } } } }";
             File.WriteAllText(configPath, minimal);
 
             var fake = new FakeRecognizer();
             using var game = new PacmanVoice.PacmanGame(fake);
 
-            // Call Initialize to trigger voice controller setup and Start (Start sets StartCalled on the fake)
-            game.Initialize();
+            // Call EnsureInitialized to trigger voice controller setup and Start (Start sets StartCalled on the fake)
+            game.EnsureInitialized();
 
             Assert.True(fake.StartCalled, "Injected recognizer Start should have been called during initialization.");
 

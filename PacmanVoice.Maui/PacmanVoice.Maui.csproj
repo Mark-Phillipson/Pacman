@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>net10.0-android</TargetFrameworks>
+    <!-- TEMPORARY WORKAROUND: Target net8.0 (desktop) for local builds to avoid unsupported android workload errors -->
+    <TargetFramework>net8.0</TargetFramework>
     <OutputType>Exe</OutputType>
     <UseMaui>true</UseMaui>
     <ImplicitUsings>enable</ImplicitUsings>
@@ -14,17 +15,11 @@
     <PackageReference Include="Microsoft.CognitiveServices.Speech" Version="1.27.*" />
   </ItemGroup>
 
+  <!-- linked files removed: using ProjectReference to PacmanVoice instead to avoid duplicate types -->
+
   <ItemGroup>
-    <!-- Link minimal recognizer and types into MAUI spike to avoid restoring the full PacmanVoice project in this spike -->
-    <Compile Include="..\PacmanVoice\Voice\AzureRecognizer.cs">
-      <Link>Voice\AzureRecognizer.cs</Link>
-    </Compile>
-    <Compile Include="..\PacmanVoice\Voice\IRecognizer.cs">
-      <Link>Voice\IRecognizer.cs</Link>
-    </Compile>
-    <Compile Include="..\PacmanVoice\Voice\CommandType.cs">
-      <Link>Voice\CommandType.cs</Link>
-    </Compile>
+    <!-- Reference the main PacmanVoice project so types like PacmanGame are available to MAUI host -->
+    <ProjectReference Include="..\PacmanVoice\PacmanVoice.csproj" />
   </ItemGroup>
 
 </Project>

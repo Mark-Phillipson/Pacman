@@ -12,7 +12,9 @@ Quick setup
 2. Install .NET 10 SDK (recommended version pinned in `global.json`):
    - https://dotnet.microsoft.com/download/dotnet/10.0
    - Install the SDK that includes the Mono runtime pack (10.0.2 recommended).
-
+Temporary local workaround
+--------------------------
+If you're unable to install .NET 10 locally, a temporary workaround is to target **net8.0 / net8.0-android** locally to allow builds to succeed. This is intended as a short-term measure; CI is configured to build using .NET 10.
 3. Install MAUI workloads (if you haven't):
    - `dotnet workload install maui`
    - `dotnet workload restore`

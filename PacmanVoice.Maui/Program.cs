@@ -25,6 +25,7 @@ public static class MauiProgram
         builder.Services.AddSingleton<MainPage>();
 
         // Lifecycle hooks for platforms: pause/resume game and stop/start recognizer on background/foreground
+#if NET10_0
         builder.ConfigureLifecycleEvents(events =>
         {
 #if ANDROID
@@ -88,6 +89,7 @@ public static class MauiProgram
             );
 #endif
         });
+#endif
 
         var app = builder.Build();
         MauiHost.Services = app.Services;

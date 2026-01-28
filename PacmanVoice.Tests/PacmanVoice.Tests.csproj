@@ -10,18 +10,15 @@
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.0.1" />
     <!-- Include Speech SDK so AzureRecognizer (linked) can compile for net8.0 -->
     <PackageReference Include="Microsoft.CognitiveServices.Speech" Version="1.27.*" />
+    <!-- Needed for ServiceCollection used in MauiRegistrationTests -->
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.0" />
   </ItemGroup>
 
   <ItemGroup>
-    <!-- Use linked source files from PacmanVoice to avoid referencing the entire PacmanVoice project -->
-    <Compile Include="..\PacmanVoice\Voice\AzureRecognizer.cs">
-      <Link>Voice\AzureRecognizer.cs</Link>
-    </Compile>
-    <Compile Include="..\PacmanVoice\Voice\CommandType.cs">
-      <Link>Voice\CommandType.cs</Link>
-    </Compile>
-    <Compile Include="..\PacmanVoice\Voice\IRecognizer.cs">
-      <Link>Voice\IRecognizer.cs</Link>
-    </Compile>
+    <!-- Reference the full PacmanVoice project so we can test integration points like PacmanGame -->
+    <ProjectReference Include="..\PacmanVoice\PacmanVoice.csproj" />
+
+    <!-- Legacy linked files removed since we reference PacmanVoice project directly to avoid type conflicts -->
+    <!-- If you need to compile tests without referencing the full project, consider adding explicit linked files selectively. -->
   </ItemGroup>
 </Project>

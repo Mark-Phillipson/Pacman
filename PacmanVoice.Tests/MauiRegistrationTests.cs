@@ -37,8 +37,8 @@ namespace PacmanVoice.Tests
             var minimal = "{\n  \"defaultProfile\": \"default\",\n  \"profiles\": { \"default\": { \"directions\": { \"up\": \"up\", \"down\": \"down\", \"left\": \"left\", \"right\": \"right\" }, \"commands\": { \"beginGame\": \"begin game\" } } } }";
             System.IO.File.WriteAllText(configPath, minimal);
 
-            // Call Initialize to ensure the injected recognizer is started via the voice controller
-            game.Initialize();
+            // Call EnsureInitialized to ensure the injected recognizer is started via the voice controller
+            game.EnsureInitialized();
 
             var recognizer = (FakeRecognizerForDI)provider.GetRequiredService<IRecognizer>();
             Assert.True(recognizer.StartCalled);
