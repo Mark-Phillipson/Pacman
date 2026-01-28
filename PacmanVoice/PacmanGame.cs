@@ -427,6 +427,33 @@ public class PacmanGame : Microsoft.Xna.Framework.Game
         Console.WriteLine($"Voice error: {error}");
     }
 
+    /// <summary>
+    /// Ensure the game has been initialized (useful when hosted by MAUI where Run() is not invoked).
+    /// </summary>
+    public void EnsureInitialized()
+    {
+        if (!_initialized)
+        {
+            Initialize();
+        }
+    }
+
+    /// <summary>
+    /// Pause the simulation for the host (e.g., when app goes to background).
+    /// </summary>
+    public void PauseForHost()
+    {
+        _clock?.SetUserPaused(true);
+    }
+
+    /// <summary>
+    /// Resume the simulation for the host (e.g., when app returns to foreground).
+    /// </summary>
+    public void ResumeForHost()
+    {
+        _clock?.SetUserPaused(false);
+    }
+
     protected override void Dispose(bool disposing)
     {
         if (disposing)
