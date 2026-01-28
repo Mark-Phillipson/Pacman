@@ -56,10 +56,9 @@ public class GameSimulation
     private bool _isRespawning = false;
     private double _respawnTimer = 0;
     
-    // Extra life thresholds
-    private bool _lifeAwardedAt3000 = false;
-    private bool _lifeAwardedAt5000 = false;
-    private bool _lifeAwardedAt8000 = false;
+    // Extra life system: award an extra life every interval of points
+    private const int ExtraLifeInterval = 6000;
+    private int _nextExtraLifeScore = ExtraLifeInterval;    
 
     public event Action? PlayerDied;
     public event Action? PelletEaten;
@@ -104,6 +103,10 @@ public class GameSimulation
             // Default to level 1 for any level > 2
             InitializeLevel1();
         }
+
+        // Lock ghosts at the start of a level and reset lock timer
+        _ghostsLockedInPen = true;
+        _ghostLockTimer = 0;
     }
 
     private void InitializeLevel1()
@@ -363,6 +366,18 @@ public class GameSimulation
     {
         if (_state != GameState.Playing) return;
 
+        // Update ghost lock timer (runs even during respawn)
+        if (_ghostsLockedInPen)
+        {
+            _ghostLockTimer += deltaSeconds;
+            double lockDuration = _isRespawning ? GhostLockAfterDeathDuration : GhostLockInPenDuration;
+            if (_ghostLockTimer >= lockDuration)
+            {
+                _ghostsLockedInPen = false;
+                _ghostLockTimer = 0;
+            }
+        }
+
         // Handle respawn delay after death
         if (_isRespawning)
         {
@@ -420,21 +435,12 @@ public class GameSimulation
                     _pelletsEaten++;
                     PelletEaten?.Invoke();
 
-                    // Award extra lives at specific score thresholds
-                    if (_score >= 3000 && !_lifeAwardedAt3000)
+                    // Award extra lives every ExtraLifeInterval points (handles multiple thresholds if score jumps)
+                    while (_score >= _nextExtraLifeScore)
                     {
                         _lives++;
-                        _lifeAwardedAt3000 = true;`n                        ExtraLifeAwarded?.Invoke();`n                        ExtraLifeAwarded?.Invoke();
-                    }
-                    if (_score >= 5000 && !_lifeAwardedAt5000)
-                    {
-                        _lives++;
-                        _lifeAwardedAt5000 = true;`n                        ExtraLifeAwarded?.Invoke();`n                        ExtraLifeAwarded?.Invoke();
-                    }
-                    if (_score >= 8000 && !_lifeAwardedAt8000)
-                    {
-                        _lives++;
-                        _lifeAwardedAt8000 = true;`n                        ExtraLifeAwarded?.Invoke();`n                        ExtraLifeAwarded?.Invoke();
+                        _nextExtraLifeScore += ExtraLifeInterval;
+                        ExtraLifeAwarded?.Invoke();
                     }
 
                     // Chance to spawn fruit
@@ -586,6 +592,10 @@ public class GameSimulation
             ghost.ResetToStart();
             ghost.EndRetreatToPen();
         }
+
+        // Lock ghosts in pen after player death and reset lock timer
+        _ghostsLockedInPen = true;
+        _ghostLockTimer = 0;
     }
 
     private void AdvanceLevel()
@@ -671,9 +681,7 @@ public class GameSimulation
         _fruitPosition = null;
         _isRespawning = false;
         _respawnTimer = 0;
-        _lifeAwardedAt3000 = false;
-        _lifeAwardedAt5000 = false;
-        _lifeAwardedAt8000 = false;
+        _nextExtraLifeScore = ExtraLifeInterval;
         InitializeLevel();
         _state = GameState.Playing;
         
