@@ -13,5 +13,18 @@
     <Label x:Name="StatusLabel" Text="Status: Idle" />
     <Label x:Name="ResultLabel" Text="Recognized: (none)" />
     <Label x:Name="PermissionExplanation" Text="" IsVisible="False" />
+
+    <Frame Padding="10" BorderColor="#DDD" HasShadow="False">
+      <VerticalStackLayout Spacing="8">
+        <Label Text="Azure Speech (dev only)" FontAttributes="Bold" />
+        <Entry x:Name="AzureKeyEntry" Placeholder="Subscription key" />
+        <Entry x:Name="AzureRegionEntry" Placeholder="Region (e.g., westus)" />
+        <HorizontalStackLayout Spacing="8">
+          <Button x:Name="SaveAzureButton" Text="Save Azure Key" Clicked="OnSaveAzureClicked" />
+          <Button x:Name="ClearAzureButton" Text="Clear" Clicked="OnClearAzureClicked" />
+        </HorizontalStackLayout>
+        <Label x:Name="AzureStatusLabel" Text="" />
+      </VerticalStackLayout>
+    </Frame>
   </VerticalStackLayout>
 </ContentPage>

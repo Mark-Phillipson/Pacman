@@ -33,13 +33,55 @@ public class AzureRecognizer : IRecognizer, IDisposable
     private readonly List<string> _phrases = new();
 
     /// <summary>
-    /// Default constructor reads subscription key/region from environment variables.
+    /// Default constructor reads subscription key/region from environment variables or local app file.
     /// </summary>
     public AzureRecognizer()
         : this(Environment.GetEnvironmentVariable("AZURE_SPEECH_KEY"), Environment.GetEnvironmentVariable("AZURE_SPEECH_REGION"))
     {
+        // If not configured from env, we'll attempt to configure later from app data file when Start() is called.
     }
 
+    /// <summary>
+    /// Configure or reconfigure the recognizer at runtime using a subscription key and region.
+    /// This is useful for device scenarios where environment variables are not available.
+    /// </summary>
+    public void Configure(string? subscriptionKey, string? region, string? language = null)
+    {
+        if (string.IsNullOrEmpty(subscriptionKey) || string.IsNullOrEmpty(region))
+        {
+            // Treat as clear/unconfigure
+            try
+            {
+                _recognizer?.StopContinuousRecognitionAsync().GetAwaiter().GetResult();
+            }
+            catch { }
+            _recognizer?.Dispose();
+            _recognizer = null;
+            _config = null;
+            _configured = false;
+            RecognitionError?.Invoke(this, "Azure Speech configure: key/region missing, recognizer cleared");
+            return;
+        }
+
+        try
+        {
+            // Dispose previous instances if any
+            _recognizer?.Dispose();
+            _config = SpeechConfig.FromSubscription(subscriptionKey, region);
+            if (!string.IsNullOrEmpty(language))
+                _config.SpeechRecognitionLanguage = language;
+
+            var audioConfig = AudioConfig.FromDefaultMicrophoneInput();
+            _recognizer = new SpeechRecognizer(_config, audioConfig);
+            AttachEventHandlers();
+            _configured = true;
+        }
+        catch (Exception ex)
+        {
+            RecognitionError?.Invoke(this, $"Failed to configure Azure Speech: {ex.Message}");
+            _configured = false;
+        }
+    }
     /// <summary>
     /// Create using subscription key and region.
     /// </summary>
@@ -134,8 +176,34 @@ public class AzureRecognizer : IRecognizer, IDisposable
     {
         if (!_configured || _recognizer == null)
         {
-            RecognitionError?.Invoke(this, "Cannot start AzureRecognizer: not configured.");
-            return;
+            // Try to load credentials from app data file (device scenario) and configure
+            try
+            {
+                var appData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+                var credFile = System.IO.Path.Combine(appData, "azure-speech.json");
+                if (System.IO.File.Exists(credFile))
+                {
+                    var json = System.IO.File.ReadAllText(credFile);
+                    var obj = System.Text.Json.JsonDocument.Parse(json).RootElement;
+                    var key = obj.GetProperty("key").GetString();
+                    var region = obj.GetProperty("region").GetString();
+                    if (!string.IsNullOrEmpty(key) && !string.IsNullOrEmpty(region))
+                    {
+                        Configure(key, region);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                // non-fatal; fall through to error
+                RecognitionError?.Invoke(this, $"Failed to load credentials from file: {ex.Message}");
+            }
+
+            if (!_configured || _recognizer == null)
+            {
+                RecognitionError?.Invoke(this, "Cannot start AzureRecognizer: not configured.");
+                return;
+            }
         }
 
         if (_cts != null)

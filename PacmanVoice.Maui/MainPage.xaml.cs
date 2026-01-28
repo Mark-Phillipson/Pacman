@@ -23,48 +23,6 @@ public partial class MainPage : ContentPage
         _recognizer.SpeechRejected += (s, e) => MainThread.BeginInvokeOnMainThread(() => { StatusLabel.Text = "Status: Rejected"; ResultLabel.Text = "Recognized: (rejected)"; });
     }
 
-    protected override void OnAppearing()
-    {
-        base.OnAppearing();
-
-        // Ensure the game is initialized and resume simulation
-        try
-        {
-            _game.EnsureInitialized();
-            _game.ResumeForHost();
-        }
-        catch { }
-
-        // Start recognizer
-        try
-        {
-            StatusLabel.Text = "Status: Listening";
-            _recognizer.Start();
-        }
-        catch (System.Exception ex)
-        {
-            StatusLabel.Text = "Error: " + ex.Message;
-        }
-    }
-
-    protected override void OnDisappearing()
-    {
-        base.OnDisappearing();
-
-        // Pause simulation and stop recognizer when page goes out of view
-        try
-        {
-            _game.PauseForHost();
-        }
-        catch { }
-
-        try
-        {
-            _recognizer.Stop();
-            StatusLabel.Text = "Status: Stopped";
-        }
-        catch { }
-    }
 
     private void Recognizer_SpeechRecognized(object? sender, RecognitionResult e)
     {
@@ -115,6 +73,9 @@ public partial class MainPage : ContentPage
             StartButton.IsEnabled = true;
             RequestPermissionButton.IsEnabled = false;
         }
+
+        // Update Azure status
+        UpdateAzureStatusLabel();
     }
 
     protected override void OnAppearing()
@@ -144,6 +105,9 @@ public partial class MainPage : ContentPage
                 {
                     StatusLabel.Text = "Permission required to listen";
                 }
+
+                // Update Azure status label
+                UpdateAzureStatusLabel();
             }
             catch (System.Exception ex)
             {
@@ -216,5 +180,89 @@ public partial class MainPage : ContentPage
         RequestPermissionButton.IsEnabled = !ok;
         PermissionExplanation.IsVisible = !ok;
         return ok;
+    }
+
+    private void UpdateAzureStatusLabel()
+    {
+        try
+        {
+            var appData = System.Environment.GetFolderPath(System.Environment.SpecialFolder.LocalApplicationData);
+            var credFile = System.IO.Path.Combine(appData, "azure-speech.json");
+            if (System.IO.File.Exists(credFile))
+            {
+                var json = System.IO.File.ReadAllText(credFile);
+                var obj = System.Text.Json.JsonDocument.Parse(json).RootElement;
+                var key = obj.GetProperty("key").GetString();
+                AzureStatusLabel.Text = string.IsNullOrEmpty(key) ? "Azure: Not configured" : "Azure: Configured";
+                SaveAzureButton.IsEnabled = true;
+                ClearAzureButton.IsEnabled = true;
+            }
+            else
+            {
+                AzureStatusLabel.Text = "Azure: Not configured";
+                SaveAzureButton.IsEnabled = true;
+                ClearAzureButton.IsEnabled = false;
+            }
+        }
+        catch
+        {
+            AzureStatusLabel.Text = "Azure: Unknown";
+            SaveAzureButton.IsEnabled = true;
+            ClearAzureButton.IsEnabled = false;
+        }
+    }
+
+    async void OnSaveAzureClicked(object sender, EventArgs e)
+    {
+        var key = AzureKeyEntry.Text?.Trim();
+        var region = AzureRegionEntry.Text?.Trim();
+        if (string.IsNullOrEmpty(key) || string.IsNullOrEmpty(region))
+        {
+            AzureStatusLabel.Text = "Azure: Key and Region required";
+            return;
+        }
+
+        try
+        {
+            var appData = System.Environment.GetFolderPath(System.Environment.SpecialFolder.LocalApplicationData);
+            var credFile = System.IO.Path.Combine(appData, "azure-speech.json");
+            var obj = System.Text.Json.JsonSerializer.Serialize(new { key = key, region = region });
+            System.IO.File.WriteAllText(credFile, obj);
+
+            AzureStatusLabel.Text = "Azure: Configured";
+            SaveAzureButton.IsEnabled = true;
+            ClearAzureButton.IsEnabled = true;
+
+            // Try to configure running recognizer if it's AzureRecognizer
+            if (_recognizer is PacmanVoice.Voice.AzureRecognizer az)
+            {
+                az.Configure(key, region);
+            }
+        }
+        catch (System.Exception ex)
+        {
+            AzureStatusLabel.Text = "Azure: Save failed";
+        }
+    }
+
+    async void OnClearAzureClicked(object sender, EventArgs e)
+    {
+        try
+        {
+            var appData = System.Environment.GetFolderPath(System.Environment.SpecialFolder.LocalApplicationData);
+            var credFile = System.IO.Path.Combine(appData, "azure-speech.json");
+            if (System.IO.File.Exists(credFile))
+                System.IO.File.Delete(credFile);
+
+            AzureStatusLabel.Text = "Azure: Not configured";
+            ClearAzureButton.IsEnabled = false;
+
+            // If the recognizer is AzureRecognizer, mark not configured
+            if (_recognizer is PacmanVoice.Voice.AzureRecognizer az)
+            {
+                az.Configure(null, null);
+            }
+        }
+        catch { AzureStatusLabel.Text = "Azure: Clear failed"; }
     }
 }
