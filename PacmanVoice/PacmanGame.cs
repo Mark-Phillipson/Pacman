@@ -54,13 +54,8 @@ public class PacmanGame : Microsoft.Xna.Framework.Game
     {
         try
         {
-            // Check if running on Windows (System.Speech requires Windows)
-            if (!OperatingSystem.IsWindows())
-            {
-                _initError = "This game requires Windows to run (System.Speech is Windows-only)";
-                Console.WriteLine(_initError);
-                return;
-            }
+            // Platform detection: allow Windows and Android builds. Specific recognizer selection happens below.
+
 
             // Initialize core systems
             _clock = new SimulationClock();
@@ -109,13 +104,22 @@ public class PacmanGame : Microsoft.Xna.Framework.Game
                 }
             };
 
-            // Load voice commands configuration
+            // Load voice commands configuration (try disk first, then packaged assets)
             var configPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "voice-commands.json");
+            if (!File.Exists(configPath))
+            {
+                configPath = "voice-commands.json"; // TitleContainer.OpenStream will be used by loader if needed
+            }
             var config = VoiceConfigLoader.LoadConfig(configPath);
             var profile = config.Profiles[config.DefaultProfile];
 
-            // Initialize voice recognition
-            var recognizer = new SystemSpeechRecognizer();
+            // Initialize voice recognition (select implementation per-platform)
+            IRecognizer recognizer;
+#if ANDROID
+            recognizer = new VoskRecognizer();
+#else
+            recognizer = new SystemSpeechRecognizer();
+#endif
             _voiceController = new VoiceInputController(recognizer, _clock);
 
             // Subscribe to command events

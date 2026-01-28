@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>11</LangVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="xunit" Version="2.5.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.5.3" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.0.1" />
+    <!-- Include Speech SDK so AzureRecognizer (linked) can compile for net8.0 -->
+    <PackageReference Include="Microsoft.CognitiveServices.Speech" Version="1.27.*" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Use linked source files from PacmanVoice to avoid referencing the entire PacmanVoice project -->
+    <Compile Include="..\PacmanVoice\Voice\AzureRecognizer.cs">
+      <Link>Voice\AzureRecognizer.cs</Link>
+    </Compile>
+    <Compile Include="..\PacmanVoice\Voice\CommandType.cs">
+      <Link>Voice\CommandType.cs</Link>
+    </Compile>
+    <Compile Include="..\PacmanVoice\Voice\IRecognizer.cs">
+      <Link>Voice\IRecognizer.cs</Link>
+    </Compile>
+  </ItemGroup>
+</Project>

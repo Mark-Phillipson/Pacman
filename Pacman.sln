@@ -4,6 +4,8 @@ VisualStudioVersion = 17.5.2.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PacmanVoice", "PacmanVoice\PacmanVoice.csproj", "{48C8E155-ADE3-C08C-B019-EAE8449A2A28}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PacmanVoice.Tests", "PacmanVoice.Tests\PacmanVoice.Tests.csproj", "{C5F3E2F8-7B6B-4AF2-B0A9-3A9F2A9C4E1C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -14,6 +16,10 @@ Global
 		{48C8E155-ADE3-C08C-B019-EAE8449A2A28}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{48C8E155-ADE3-C08C-B019-EAE8449A2A28}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{48C8E155-ADE3-C08C-B019-EAE8449A2A28}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C5F3E2F8-7B6B-4AF2-B0A9-3A9F2A9C4E1C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C5F3E2F8-7B6B-4AF2-B0A9-3A9F2A9C4E1C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C5F3E2F8-7B6B-4AF2-B0A9-3A9F2A9C4E1C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C5F3E2F8-7B6B-4AF2-B0A9-3A9F2A9C4E1C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

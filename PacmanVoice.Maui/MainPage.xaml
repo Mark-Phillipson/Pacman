@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="PacmanVoice.Maui.MainPage"
+             Title="PacmanVoice Spike">
+  <VerticalStackLayout Padding="20" Spacing="12">
+    <Label Text="PacmanVoice MAUI Spike" FontAttributes="Bold" FontSize="18" />
+    <HorizontalStackLayout Spacing="12">
+      <Button x:Name="StartButton" Text="Start Listening" Clicked="OnStartClicked" />
+      <Button x:Name="StopButton" Text="Stop Listening" Clicked="OnStopClicked" />
+    </HorizontalStackLayout>
+    <Label x:Name="StatusLabel" Text="Status: Idle" />
+    <Label x:Name="ResultLabel" Text="Recognized: (none)" />
+  </VerticalStackLayout>
+</ContentPage>

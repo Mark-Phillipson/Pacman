@@ -131,12 +131,29 @@ public static class VoiceConfigLoader
 {
     public static VoiceCommandsConfig LoadConfig(string configPath)
     {
-        if (!File.Exists(configPath))
+        // Prefer direct file on disk when available (useful in development)
+        if (File.Exists(configPath))
         {
-            throw new FileNotFoundException($"Configuration file not found: {configPath}");
+            var json = File.ReadAllText(configPath);
+            return DeserializeAndValidate(json);
         }
 
-        var json = File.ReadAllText(configPath);
+        // When running from a packaged build (e.g., Android), try TitleContainer.OpenStream
+        try
+        {
+            using var stream = TitleContainer.OpenStream(configPath);
+            using var reader = new StreamReader(stream);
+            var json = reader.ReadToEnd();
+            return DeserializeAndValidate(json);
+        }
+        catch (Exception ex)
+        {
+            throw new FileNotFoundException($"Configuration file not found: {configPath} (tried disk and TitleContainer)", ex);
+        }
+    }
+
+    private static VoiceCommandsConfig DeserializeAndValidate(string json)
+    {
         var config = JsonConvert.DeserializeObject<VoiceCommandsConfig>(json);
 
         if (config == null)

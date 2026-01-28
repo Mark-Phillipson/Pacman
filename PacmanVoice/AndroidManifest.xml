@@ -1,0 +1,11 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.example.pacmanvoice">
+  <!-- Required permission to capture microphone audio -->
+  <uses-permission android:name="android.permission.RECORD_AUDIO" />
+
+  <!-- Minimum SDK enforced by project properties; included here for clarity -->
+  <uses-sdk android:minSdkVersion="26" android:targetSdkVersion="31" />
+
+  <application android:label="PacmanVoice">
+    <!-- Android activity/entrypoint can be added if required by packaging/runtime -->
+  </application>
+</manifest>
