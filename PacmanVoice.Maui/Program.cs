@@ -24,6 +24,74 @@ public static class MauiProgram
 
         builder.Services.AddSingleton<MainPage>();
 
-        return builder.Build();
+        // Lifecycle hooks for platforms: pause/resume game and stop/start recognizer on background/foreground
+        builder.ConfigureLifecycleEvents(events =>
+        {
+#if ANDROID
+            events.AddAndroid(android => android
+                .OnPause(activity =>
+                {
+                    var sp = MauiHost.Services;
+                    var game = sp?.GetService<PacmanVoice.PacmanGame>();
+                    var recognizer = sp?.GetService<IRecognizer>();
+                    try { game?.PauseForHost(); } catch { }
+                    try { recognizer?.Stop(); } catch { }
+                })
+                .OnResume(activity =>
+                {
+                    var sp = MauiHost.Services;
+                    var game = sp?.GetService<PacmanVoice.PacmanGame>();
+                    var recognizer = sp?.GetService<IRecognizer>();
+                    try { game?.ResumeForHost(); } catch { }
+                    try { recognizer?.Start(); } catch { }
+                })
+            );
+#endif
+#if IOS
+            events.AddiOS(ios => ios
+                .DidEnterBackground(uiApp =>
+                {
+                    var sp = MauiHost.Services;
+                    var game = sp?.GetService<PacmanVoice.PacmanGame>();
+                    var recognizer = sp?.GetService<IRecognizer>();
+                    try { game?.PauseForHost(); } catch { }
+                    try { recognizer?.Stop(); } catch { }
+                })
+                .WillEnterForeground(uiApp =>
+                {
+                    var sp = MauiHost.Services;
+                    var game = sp?.GetService<PacmanVoice.PacmanGame>();
+                    var recognizer = sp?.GetService<IRecognizer>();
+                    try { game?.ResumeForHost(); } catch { }
+                    try { recognizer?.Start(); } catch { }
+                })
+            );
+#endif
+#if WINDOWS
+            events.AddWindows(windows => windows
+                .OnSuspending((wnd, args) =>
+                {
+                    var sp = MauiHost.Services;
+                    var game = sp?.GetService<PacmanVoice.PacmanGame>();
+                    var recognizer = sp?.GetService<IRecognizer>();
+                    try { game?.PauseForHost(); } catch { }
+                    try { recognizer?.Stop(); } catch { }
+                })
+                .OnActivated((wnd, args) =>
+                {
+                    var sp = MauiHost.Services;
+                    var game = sp?.GetService<PacmanVoice.PacmanGame>();
+                    var recognizer = sp?.GetService<IRecognizer>();
+                    try { game?.ResumeForHost(); } catch { }
+                    try { recognizer?.Start(); } catch { }
+                })
+            );
+#endif
+        });
+
+        var app = builder.Build();
+        MauiHost.Services = app.Services;
+
+        return app;
     }
 }
