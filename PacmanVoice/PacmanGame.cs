@@ -27,6 +27,9 @@ public class PacmanGame : Microsoft.Xna.Framework.Game
     private HudOverlay? _hudOverlay;
     private SoundEffectManager? _soundManager;
 
+    // Optional injected recognizer (used by hosts such as MAUI)
+    private readonly IRecognizer? _injectedRecognizer;
+
     private List<ScoreRecorder.ScoreEntry> _topScores = new();
     private const string DefaultPlayerName = "Player One";
     private ScoreRecorder.ScoreEntry? _lastRecordedScore;
@@ -48,6 +51,14 @@ public class PacmanGame : Microsoft.Xna.Framework.Game
         _graphics.PreferredBackBufferWidth = 1670;
         _graphics.PreferredBackBufferHeight = 1040;
         Window.AllowUserResizing = true;
+    }
+
+    /// <summary>
+    /// Creates the game with an injected `IRecognizer` (for hosts that use DI, e.g., MAUI).
+    /// </summary>
+    public PacmanGame(IRecognizer recognizer) : this()
+    {
+        _injectedRecognizer = recognizer ?? throw new ArgumentNullException(nameof(recognizer));
     }
 
     protected override void Initialize()
@@ -114,11 +125,11 @@ public class PacmanGame : Microsoft.Xna.Framework.Game
             var profile = config.Profiles[config.DefaultProfile];
 
             // Initialize voice recognition (select implementation per-platform)
-            IRecognizer recognizer;
+            IRecognizer recognizer = _injectedRecognizer ??
 #if ANDROID
-            recognizer = new VoskRecognizer();
+                new VoskRecognizer();
 #else
-            recognizer = new SystemSpeechRecognizer();
+                new SystemSpeechRecognizer();
 #endif
             _voiceController = new VoiceInputController(recognizer, _clock);
 
