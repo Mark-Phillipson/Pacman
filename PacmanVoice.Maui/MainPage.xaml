@@ -8,8 +8,10 @@
     <HorizontalStackLayout Spacing="12">
       <Button x:Name="StartButton" Text="Start Listening" Clicked="OnStartClicked" />
       <Button x:Name="StopButton" Text="Stop Listening" Clicked="OnStopClicked" />
+      <Button x:Name="RequestPermissionButton" Text="Request Microphone Permission" Clicked="OnRequestPermissionClicked" />
     </HorizontalStackLayout>
     <Label x:Name="StatusLabel" Text="Status: Idle" />
     <Label x:Name="ResultLabel" Text="Recognized: (none)" />
+    <Label x:Name="PermissionExplanation" Text="" IsVisible="False" />
   </VerticalStackLayout>
 </ContentPage>
