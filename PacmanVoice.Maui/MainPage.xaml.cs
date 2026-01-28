@@ -87,12 +87,20 @@ public partial class MainPage : ContentPage
         StatusLabel.Text = "Status: Listening";
         // If the IRecognizer implementation exposes Start/StartAsync, prefer async. We call Start() for simplicity.
         _recognizer.Start();
+
+        // Toggle buttons
+        StartButton.IsEnabled = false;
+        StopButton.IsEnabled = true;
     }
 
     void OnStopClicked(object sender, EventArgs e)
     {
         _recognizer.Stop();
         StatusLabel.Text = "Status: Stopped";
+
+        // Toggle buttons
+        StartButton.IsEnabled = true;
+        StopButton.IsEnabled = false;
     }
 
     async void OnRequestPermissionClicked(object sender, EventArgs e)
@@ -102,6 +110,10 @@ public partial class MainPage : ContentPage
         {
             StatusLabel.Text = "Permission: Granted";
             PermissionExplanation.IsVisible = false;
+
+            // Enable Start when permission granted
+            StartButton.IsEnabled = true;
+            RequestPermissionButton.IsEnabled = false;
         }
     }
 
@@ -163,13 +175,21 @@ public partial class MainPage : ContentPage
     {
         var status = await Permissions.CheckStatusAsync<Permissions.Microphone>();
         if (status == PermissionStatus.Granted)
+        {
+            // Update UI
+            StartButton.IsEnabled = true;
+            RequestPermissionButton.IsEnabled = false;
+            PermissionExplanation.IsVisible = false;
             return true;
+        }
 
         if (status == PermissionStatus.Denied || status == PermissionStatus.Disabled)
         {
             // Provide explanation and offer to open app settings
             PermissionExplanation.Text = "Microphone access is required for voice commands. Please enable microphone permission in settings.";
             PermissionExplanation.IsVisible = true;
+            StartButton.IsEnabled = false;
+            RequestPermissionButton.IsEnabled = true;
 
             if (showSettingsIfDenied)
             {
@@ -182,11 +202,19 @@ public partial class MainPage : ContentPage
 
             // Try requesting permission if platform allows
             var req = await Permissions.RequestAsync<Permissions.Microphone>();
-            return req == PermissionStatus.Granted;
+            var granted = req == PermissionStatus.Granted;
+            StartButton.IsEnabled = granted;
+            RequestPermissionButton.IsEnabled = !granted;
+            PermissionExplanation.IsVisible = !granted;
+            return granted;
         }
 
         // Request permission for other statuses (Unknown, etc.)
         var newStatus = await Permissions.RequestAsync<Permissions.Microphone>();
-        return newStatus == PermissionStatus.Granted;
+        var ok = newStatus == PermissionStatus.Granted;
+        StartButton.IsEnabled = ok;
+        RequestPermissionButton.IsEnabled = !ok;
+        PermissionExplanation.IsVisible = !ok;
+        return ok;
     }
 }
